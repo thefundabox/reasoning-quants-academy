@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reasoning &amp; Quants Academy</title>
+<meta name="description" content="Learn reasoning and basic numeracy for RAS Prelims by doing — interactive lessons, a guide who sets riddles, and a dashboard that remembers what you nearly forgot.">
+<link rel="stylesheet" href="assets/css/core.css">
+</head>
+<body class="theme-brand">
+<div id="app"></div>
+
+<script type="module">
+import * as store from './assets/js/store.js';
+import { topbar, gateway, trackPanel, wireLearnerChip, $ } from './assets/js/shell.js';
+import { href, lessonPath } from './assets/js/routes.js';
+import { betaalSays } from './assets/js/betaal.js';
+import { ACADEMIES, readyLessons, nextUp, activeAcademies, activeUnits } from './assets/js/curriculum.js';
+import { refreshAchievements } from './assets/js/progress.js';
+import { CONFIG, applyTheme } from './assets/js/config.js';
+
+/* Your colours, before the first paint. Everything else on this page reads its
+   words from CONFIG too, so a downloaded copy is yours end to end. */
+applyTheme();
+document.title = CONFIG.identity.name;
+
+/* The tagline with its last word marked, which is what gives the heading its
+   one flash of colour. A one-word tagline marks the whole thing rather than
+   nothing — the rule degrades, it does not break. */
+function heroTitle() {
+  const t = CONFIG.identity.tagline.replace(/\.$/, '');
+  const bits = t.split(/\s+/);
+  const tail = bits.length > 1 ? bits.pop() : bits[0];
+  const head = bits.length && bits.join(' ') !== tail ? bits.join(' ') + ' ' : '';
+  return `${head}<span class="hero__mark">${tail}</span>.`;
+}
+
+function greeting() {
+  const s = store.streakInfo();
+  const st = store.get();
+  const started = Object.keys(st.lessons).length > 0;
+  const due = store.dueForReview().length;
+
+  if (!started) return {
+    mood: 'teasing',
+    text: `So. Another one who wants to reason well.<br><br>
+           I have set riddles for kings, and most of them answered too quickly. Here you will do the opposite:
+           you will <b>draw before you decide</b>, and commit to an answer before I explain anything.
+           Pick an academy below — reasoning if you like puzzles, numbers if you like certainty.`,
+  };
+  if (due) return {
+    mood: 'thinking',
+    text: `You have <b>${due} idea${due > 1 ? 's' : ''}</b> waiting in the review queue.
+           I hold them back until the moment you are about to forget — that is when repetition actually works.
+           Clear those first, then take new ground.`,
+  };
+  if (s.atRisk) return {
+    mood: 'warm',
+    text: `Your streak stands at <b>${s.count}</b> and today is still empty.
+           One lesson is enough. I am patient, but the calendar is not.`,
+  };
+  return {
+    mood: 'pleased',
+    text: `<b>${s.count} day${s.count > 1 ? 's' : ''}</b> running, ${st.xp} XP banked.
+           Steady work beats clever bursts — that has been true for several centuries.`,
+  };
+}
+
+/* Badges are pure predicates over the record, so re-evaluating on load is
+   idempotent — and it is what credits a learner whose progress predates
+   achievements existing, rather than making them re-earn it. */
+refreshAchievements();
+
+const g = greeting();
+
+/* Counted from the curriculum rather than typed in, so the hero cannot drift
+   away from what the site actually contains — and counted through the config's
+   filters, so it describes the build the visitor has rather than the source. */
+const ACADEMY_IDS = activeAcademies();
+const LESSON_COUNT = ACADEMY_IDS.reduce((n, a) => n + readyLessons(a).length, 0);
+const CHAPTER_COUNT = ACADEMY_IDS.reduce((n, a) => n + activeUnits(a).length, 0);
+
+/* Declared after the list it reads. It used to sit above it, which cost a
+   blank home page until the browser said so — `const` has no hoisting to fall
+   back on, and nothing in the Node harness can see this file's script. */
+const next = ACADEMY_IDS.map(a => nextUp(a, store.isDone)).find(Boolean) || null;
+
+$('#app').innerHTML = `
+  ${topbar({ tab: 'home' })}
+  <div class="wrap">
+    <header class="hero hero--home">
+      <p class="eyebrow hero__kicker">${CONFIG.identity.kicker}</p>
+      <h1>${heroTitle()}</h1>
+      <p class="lede">${CONFIG.identity.blurb} Work at your own pace — your dashboard remembers
+        exactly what you nearly forgot.</p>
+      <div class="hero__facts">
+        <div><b>${LESSON_COUNT}</b><span>lessons</span></div>
+        <div><b>${CHAPTER_COUNT}</b><span>chapters</span></div>
+        <div><b id="qCount">·</b><span>drilled questions</span></div>
+        <div><b>0</b><span>fees, ever</span></div>
+      </div>
+    </header>
+
+    <div class="welcome">
+      <div>
+        ${betaalSays(g.text, { mood: g.mood, size: 88 })}
+        <div class="row" style="margin-top:var(--s5);flex-wrap:wrap;gap:var(--s3)">
+          ${next ? `<a class="btn btn--lg" href="${href(lessonPath(next.id))}">
+            ${store.isDone(next.id) ? 'Practise' : 'Begin'}: ${next.title}</a>` : ''}
+          <a class="btn btn--ghost btn--lg" href="#academies">Browse both academies</a>
+        </div>
+      </div>
+      <div class="card card--pad-sm">
+        <p class="eyebrow" style="margin-bottom:var(--s3)">How a lesson runs</p>
+        <ol class="qlist" style="gap:10px">
+          <li><span class="box box--2">1</span>${CONFIG.guide.name} sets a riddle you cannot yet solve</li>
+          <li><span class="box box--2">2</span>You manipulate the idea until it behaves</li>
+          <li><span class="box box--2">3</span>You commit to an answer — no peeking</li>
+          <li><span class="box box--4">4</span>Only then does the reasoning appear</li>
+          <li><span class="box box--4">5</span>You drill it, then the riddle returns</li>
+        </ol>
+      </div>
+    </div>
+
+    <h2 id="academies" style="margin:var(--s8) 0 var(--s5)">Choose your academy</h2>
+    <div class="gateway">${gateway()}</div>
+
+    <div class="row-between" style="margin:var(--s8) 0 var(--s5);flex-wrap:wrap;gap:var(--s3)">
+      <h2 style="margin:0">Where you stand</h2>
+      <a class="btn btn--ghost btn--sm" href="progress/">Full dashboard &amp; achievements →</a>
+    </div>
+    ${trackPanel() || `<p class="muted">Finish a lesson and your next steps appear here.</p>`}
+
+    <h2 style="margin:var(--s8) 0 var(--s5)">Why it is built this way</h2>
+    <div class="how">
+      <div class="how__step"><b>1</b><h3>Commit before you are told</h3>
+        <p>Explanations feel obvious when you read them and vanish when you need them.
+           Every lesson makes you answer first, so the explanation lands on a real question you already own.</p></div>
+      <div class="how__step"><b>2</b><h3>Draw it, never hold it</h3>
+        <p>Family trees, walks, Venn circles, percentage bars — each idea has something you can move with your hand.
+           A diagram you built is recallable under exam pressure. A rule you memorised is not.</p></div>
+      <div class="how__step"><b>3</b><h3>Meet it again before you forget</h3>
+        <p>Every concept you answer sits on a widening schedule — one day, two, four, eight, sixteen.
+           Get it wrong and it drops back down. The review queue decides what you practise, not your mood.</p></div>
+    </div>
+
+    <footer class="foot">
+      <div class="row-between" style="flex-wrap:wrap;gap:var(--s3)">
+        <span>${CONFIG.identity.name} — ${CONFIG.identity.footer}</span>
+        <span class="row" style="gap:var(--s4)">
+          ${CONFIG.features.modules ? '<a href="modules/">Original practice modules</a>' : ''}
+          <button class="btn btn--quiet" id="resetBtn">Reset my progress</button>
+        </span>
+      </div>
+      ${CONFIG.features.modules ? `<p style="margin-top:var(--s3);font-size:12.5px;max-width:70ch">
+        The eight original standalone modules still work and remain the source material for lessons
+        marked <em>Coming soon</em> — nothing has been discarded while the migration proceeds.</p>` : ''}
+      <p style="margin-top:var(--s3);font-size:12.5px">
+        <a href="customize/" style="border-bottom:1px dotted var(--ink-3)">Make this site your own</a>
+        — name, colours, guide, exam rules and which chapters exist.</p>
+    </footer>
+  </div>`;
+
+wireLearnerChip();
+
+document.getElementById('resetBtn').onclick = () => {
+  const me = store.activeProfile().name;
+  if (confirm(`Clear ${me}'s lesson progress, XP and streak? Other learners on this device keep theirs.`)) {
+    store.reset(); location.reload();
+  }
+};
+
+/* The question count needs every lesson module, so it arrives after the page.
+   Better a hero that renders instantly and fills in than one that waits. */
+import('./assets/js/review.js')
+  .then(m => m.buildIndex())
+  .then(ix => { document.getElementById('qCount').textContent = ix.all.length; })
+  .catch(() => { document.getElementById('qCount').textContent = '—'; });
+</script>
+</body>
+</html>

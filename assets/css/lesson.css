@@ -1,0 +1,372 @@
+/* ============================================================
+   Lesson runner surface — deliberately quiet.
+   One idea on screen at a time; the chrome never competes.
+   ============================================================ */
+
+.lsn { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ---- top bar with the phase rail ---- */
+.lsn__bar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: var(--s4);
+  padding: var(--s3) var(--s4);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.lsn__x {
+  width: 38px; height: 38px; flex: none; border-radius: var(--r-sm);
+  display: grid; place-items: center; color: var(--ink-3); font-size: 17px;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.lsn__x:hover { background: var(--surface-2); color: var(--ink); }
+.lsn__meta { flex: none; font-size: 13.5px; font-weight: 750; color: var(--ink-3); }
+
+.lsn__rail { flex: 1; display: flex; gap: 6px; min-width: 0; }
+.rail__seg { flex: 1; min-width: 0; }
+.rail__seg i {
+  display: block; height: 6px; border-radius: var(--r-pill);
+  background: var(--surface-2); transition: background var(--t-mid);
+}
+.rail__seg em {
+  display: block; font-style: normal; font-size: 10.5px; font-weight: 750;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+  margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 0; transition: opacity var(--t-fast);
+}
+.rail__seg.is-now i { background: var(--accent); }
+.rail__seg.is-now em { opacity: 1; color: var(--accent); }
+.rail__seg.is-done i { background: color-mix(in srgb, var(--accent) 42%, transparent); }
+@media (max-width: 620px) { .rail__seg em { display: none; } }
+
+/* ---- body ---- */
+.lsn__body { flex: 1; padding: var(--s6) var(--s4) 120px; }
+.lsn__stage { max-width: 680px; margin-inline: auto; position: relative; }
+.lsn__stage > * + * { margin-top: var(--s5); }
+.lsn__h { margin-bottom: var(--s2); }
+.lsn__stage .eyebrow { color: var(--accent); }
+
+.prose { font-size: 16px; line-height: 1.68; color: var(--ink-2); }
+.prose > * + * { margin-top: var(--s3); }
+.prose b, .prose strong { color: var(--ink); font-weight: 700; }
+.prose ul, .prose ol { padding-left: 1.25em; }
+.prose li + li { margin-top: 6px; }
+.prose code {
+  font-family: var(--mono); font-size: .92em; background: var(--surface-2);
+  padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line);
+}
+.figure {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: var(--s4); overflow-x: auto;
+}
+
+/* ---- sticky action bar ---- */
+.lsn__act {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--line); padding: var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom));
+}
+.lsn__act-in { max-width: 680px; margin-inline: auto; display: flex; justify-content: flex-end; gap: var(--s3); }
+.lsn__act .btn { min-width: 190px; }
+.act-hint { font-size: 13.5px; color: var(--ink-3); font-weight: 650; align-self: center; }
+
+/* ---- explore ---- */
+.explore { display: grid; gap: var(--s4); }
+.explore__stage {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: var(--s4);
+}
+.tasklist { list-style: none; display: grid; gap: var(--s2); }
+.tasklist li {
+  display: flex; align-items: flex-start; gap: var(--s3);
+  padding: 11px var(--s4); border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line);
+  font-size: 14.5px; color: var(--ink-2);
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+}
+.tick {
+  width: 20px; height: 20px; flex: none; margin-top: 1px; border-radius: 50%;
+  border: 2px solid var(--line-strong); position: relative;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.tasklist li.is-done { border-color: color-mix(in srgb, var(--good) 45%, transparent);
+  background: var(--good-tint); color: var(--ink); }
+.tasklist li.is-done .tick { background: var(--good); border-color: var(--good); }
+.tasklist li.is-done .tick::after {
+  content: ""; position: absolute; left: 5px; top: 1.5px; width: 5px; height: 10px;
+  border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+
+/* ---- question ---- */
+.qcard {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: var(--s5);
+}
+.qcontext {
+  background: var(--surface-2); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0; padding: var(--s3) var(--s4);
+  font-size: 14.5px; color: var(--ink-2); margin-bottom: var(--s4); line-height: 1.6;
+}
+/* A generated DI table sits inside the question's context block. It scrolls
+   inside its own wrapper rather than widening the page — a four-column table
+   still has to fit a phone. */
+.qtable-wrap { overflow-x: auto; margin: var(--s2) 0 2px; }
+.qtable { border-collapse: collapse; width: 100%; min-width: 320px; font-size: 13.5px; }
+.qtable th, .qtable td { padding: 6px 10px; text-align: right; white-space: nowrap;
+  border-bottom: 1px solid var(--line); }
+.qtable thead th { font-size: 11px; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; color: var(--ink-3); border-bottom-width: 1.5px; }
+.qtable thead th:first-child, .qtable tbody th { text-align: left; color: var(--ink); font-weight: 700; }
+.qtable tbody tr:last-child th, .qtable tbody tr:last-child td { border-bottom: 0; }
+.qtable td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* A generated question explains itself with a drawing, not only prose — the
+   lessons teach every idea with something to look at, and a drill that
+   dropped to a paragraph broke the link the lesson had just built. */
+.verdict__fig { margin: var(--s4) 0 0; padding: var(--s4); border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line); }
+.verdict__fig figcaption, .verdict__fig .figcap { margin-top: var(--s3); font-size: 12.5px;
+  line-height: 1.5; color: var(--ink-3); }
+.figsvg { display: block; width: 100%; height: auto; max-width: 480px; margin: 0 auto var(--s2); }
+.verdict__fig .qtable-wrap { margin: 0 0 var(--s2); }
+/* The cells the answer actually came from. */
+.qtable--fig .is-hot { background: color-mix(in srgb, var(--accent, var(--brand)) 13%, transparent); }
+.qtable--fig tr.is-hot th, .qtable--fig td.is-hot { color: var(--ink); font-weight: 800; }
+
+.qtext { font-size: 18px; font-weight: 650; line-height: 1.5; letter-spacing: -.01em; }
+.opts { display: grid; gap: var(--s2); margin-top: var(--s4); }
+.opt {
+  text-align: left; padding: 14px var(--s4); border-radius: var(--r-md);
+  border: 1.5px solid var(--line); background: var(--surface);
+  font-size: 15.5px; font-weight: 600; line-height: 1.45;
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+}
+.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-tint); transform: translateX(2px); }
+.opt:disabled { cursor: default; }
+.opt.is-right { border-color: var(--good); background: var(--good-tint); color: var(--good); font-weight: 750; }
+.opt.is-wrong { border-color: var(--bad); background: var(--bad-tint); color: var(--bad); }
+
+.ansrow { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s4); }
+.ansinput {
+  flex: 1; padding: 14px var(--s4); border-radius: var(--r-md);
+  border: 1.5px solid var(--line); background: var(--surface);
+  font-size: 20px; font-weight: 750;
+}
+.ansinput:focus { outline: none; border-color: var(--accent); }
+.ansinput.is-right { border-color: var(--good); background: var(--good-tint); color: var(--good); }
+.ansinput.is-wrong { border-color: var(--bad); background: var(--bad-tint); color: var(--bad); }
+.ansunit { font-size: 15px; font-weight: 700; color: var(--ink-3); }
+
+/* ---- verdict ---- */
+.verdict {
+  border-radius: var(--r-lg); padding: var(--s4) var(--s5);
+  border: 1px solid; animation: says-in var(--t-pop) both;
+}
+.verdict.is-ok { background: var(--good-tint); border-color: color-mix(in srgb, var(--good) 35%, transparent); }
+.verdict.is-no { background: var(--bad-tint);  border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.verdict__head { display: flex; align-items: center; gap: var(--s3); }
+.verdict__head b { font-size: 16px; }
+.verdict.is-ok .verdict__head b { color: var(--good); }
+.verdict.is-no .verdict__head b { color: var(--bad); }
+.verdict__head p { font-size: 14.5px; color: var(--ink-2); }
+.verdict__why {
+  margin-top: var(--s3); padding-top: var(--s3);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  font-size: 15px; line-height: 1.62;
+}
+.verdict__why b { font-weight: 750; }
+
+/* ---- solution ---- */
+.solution { list-style: none; counter-reset: sol; display: grid; gap: var(--s3); }
+.solution li {
+  counter-increment: sol; display: flex; gap: var(--s4); align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: var(--s4);
+  font-size: 15.5px; line-height: 1.6;
+  animation: says-in .45s both;
+}
+.solution li::before {
+  content: counter(sol); flex: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 800;
+}
+.takeaway {
+  border-radius: var(--r-lg); padding: var(--s4) var(--s5);
+  background: var(--gold-tint); border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
+}
+.takeaway span { font-size: 11.5px; font-weight: 800; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--gold); }
+.takeaway p { margin-top: 5px; font-size: 15.5px; font-weight: 650; line-height: 1.55; }
+
+/* ---- completion ---- */
+.done { text-align: center; padding-top: var(--s5); }
+.done__hero { display: grid; place-items: center; margin-bottom: var(--s4); }
+.done h2 { margin-bottom: var(--s3); }
+.done .lede { max-width: 46ch; margin-inline: auto; }
+.done__stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); margin: var(--s6) 0 var(--s4); }
+@media (max-width: 560px) { .done__stats { grid-template-columns: 1fr 1fr; } }
+.dstat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s4) var(--s2); }
+.dstat b { display: block; font-size: 25px; font-weight: 800; color: var(--accent); }
+.dstat span { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--ink-3); text-transform: uppercase; }
+.done__note { font-size: 13.5px; }
+.done__acts { display: flex; gap: var(--s3); justify-content: center; flex-wrap: wrap; margin-top: var(--s5); }
+
+/* ---- the way back into the teaching ----
+   Deliberately quieter than .done__acts: this is an offer, not the default
+   move. A learner who got everything right must never see it at all. */
+.reteach { margin: var(--s6) auto 0; max-width: 52ch; padding: var(--s4) var(--s5);
+  border: 1px dashed var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.reteach__lede { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); margin: 4px 0 var(--s4); }
+.reteach__row { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; }
+.reteach__row .btn { font-size: 13.5px; }
+.reteach__more { margin-top: var(--s3); font-size: 12.5px; color: var(--ink-3); }
+
+/* ---- celebration: brief, then gone ---- */
+.burst { position: absolute; inset: 0; pointer-events: none; display: grid; place-items: center; }
+.burst i {
+  position: absolute; width: 7px; height: 7px; border-radius: 2px; background: var(--gold);
+  animation: burst var(--t) cubic-bezier(.2,.7,.3,1) forwards;
+  transform: rotate(var(--a)) translateY(0);
+}
+.burst i:nth-child(3n)   { background: var(--good); }
+.burst i:nth-child(3n+1) { background: var(--accent); }
+@keyframes burst {
+  from { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); }
+  to   { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(.4); }
+}
+
+/* Provenance line on a review question — which lesson it came from. */
+.qsrc { margin-top: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line);
+  font-size: 12px; color: var(--ink-3); }
+.qsrc b { color: var(--ink-2); font-weight: 700; }
+
+/* ---- per-option feedback ----
+   Sits ABOVE the general explanation, because it is the sentence addressed to
+   this learner rather than to everybody who got the question wrong. Quiet
+   styling on purpose: it is a correction, not an alarm. */
+.verdict__pick { margin: var(--s3) 0 0; padding: var(--s3) var(--s4);
+  border-left: 3px solid var(--bad); border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: var(--bad-tint); font-size: 14px; line-height: 1.55; }
+.verdict__pick span { display: block; font-size: 11.5px; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--bad); margin-bottom: 3px; }
+
+/* ============================================================
+   14. MOCK PAPER
+   A different surface from the lesson runner on purpose — see mock.js.
+   The chrome is louder here because a clock and a palette are the two
+   things a learner has to be able to find without looking for them.
+   ============================================================ */
+.mockbrief { padding: var(--s8) 0; max-width: 760px; }
+.mockbrief h1 { margin-bottom: var(--s5); }
+.mockbrief__rules { margin-top: var(--s5); }
+.mockbrief__rules ul { margin: var(--s3) 0 0 1.1em; display: grid; gap: 8px; }
+.mockbrief__rules li { font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }
+
+.mock { min-height: 100vh; display: flex; flex-direction: column; }
+.mock__bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center;
+  gap: var(--s4); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(12px); }
+.mock__meta { flex: 1; font-size: 13.5px; color: var(--ink-3); font-weight: 650; }
+.mock__count b { color: var(--ink); font-weight: 800; }
+.mock__clock { flex: none; font-family: var(--mono); font-size: 20px; font-weight: 800;
+  font-variant-numeric: tabular-nums; padding: 4px 12px; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink); }
+.mock__clock.is-low { background: var(--gold-tint); color: var(--gold); }
+.mock__clock.is-out { background: var(--bad-tint); color: var(--bad); }
+
+.mock__body { flex: 1; display: grid; grid-template-columns: 1fr 260px; gap: var(--s6);
+  padding: var(--s6) var(--s4) 80px; max-width: 1060px; margin-inline: auto; width: 100%; }
+@media (max-width: 860px) { .mock__body { grid-template-columns: 1fr; } }
+.mock__stage { min-width: 0; }
+.mock__stage > * + * { margin-top: var(--s4); }
+.mock__qhead { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.mock__flag { font-size: 13px; }
+.mock__flag.is-on { color: var(--gold); font-weight: 800; }
+.mock__nav { display: flex; gap: var(--s2); justify-content: space-between; flex-wrap: wrap; }
+.opt.is-picked { border-color: var(--accent); background: var(--accent-tint); font-weight: 750; }
+
+.mock__side { position: sticky; top: 76px; align-self: start; padding: var(--s4);
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+@media (max-width: 860px) { .mock__side { position: static; } }
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 6px; margin: var(--s3) 0; }
+.pbtn { aspect-ratio: 1; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+  background: var(--surface-2); font-size: 12.5px; font-weight: 750; color: var(--ink-2);
+  transition: border-color var(--t-fast), background var(--t-fast); }
+.pbtn:hover { border-color: var(--accent); }
+.pbtn.pk--done { background: var(--accent-tint); border-color: var(--accent); color: var(--accent); }
+.pbtn.pk--flag { border-color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.pbtn.is-now { outline: 2px solid var(--ink); outline-offset: 1px; }
+.pbtn.is-set::after { content: ""; position: absolute; }
+.palette__key { list-style: none; display: grid; gap: 5px; margin: var(--s3) 0; }
+.palette__key li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); }
+.pk { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--line);
+  background: var(--surface-2); flex: none; }
+.pk--done { background: var(--accent-tint); border-color: var(--accent); }
+.pk--flag { border-color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.mock__submit { width: 100%; margin-top: var(--s2); }
+.mock__note { font-size: 12px; margin-top: var(--s3); line-height: 1.5; }
+
+/* A set's stimulus is repeated on each of its questions — see sets.js. */
+.qset { margin-top: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line);
+  font-size: 12px; font-weight: 700; color: var(--accent); }
+
+/* ---- the paper, marked ---- */
+.mockdone { padding: var(--s7) 0 var(--s8); max-width: 860px; }
+.mockdone h1 { margin-bottom: var(--s3); }
+.mockdone__stats { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 760px) { .mockdone__stats { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 460px) { .mockdone__stats { grid-template-columns: repeat(2, 1fr); } }
+.mockdone__verdict { margin-top: var(--s5); }
+.mockdone__verdict p { font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+.mockdone__verdict p + p { margin-top: var(--s3); }
+.mockdone__h { margin: var(--s7) 0 var(--s4); }
+.chaprows { display: grid; gap: 8px; }
+.chaprow { display: grid; grid-template-columns: 1fr 120px auto; gap: var(--s3);
+  align-items: center; font-size: 14px; }
+@media (max-width: 560px) { .chaprow { grid-template-columns: 1fr auto; }
+  .chaprow .bar { display: none; } }
+.chaprow__n { font-size: 12.5px; color: var(--ink-3); font-weight: 700; white-space: nowrap; }
+
+.qreview { display: grid; gap: var(--s2); }
+.qrev { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+  overflow: hidden; }
+.qrev summary { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4);
+  cursor: pointer; font-size: 14px; }
+.qrev summary::-webkit-details-marker { display: none; }
+.qrev__n { flex: none; width: 24px; height: 24px; border-radius: 6px; display: grid;
+  place-items: center; font-size: 11.5px; font-weight: 800; background: var(--surface-2); }
+.qrev__q { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrev__v { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ink-3); }
+.qrev--ok .qrev__n { background: var(--good-tint); color: var(--good); }
+.qrev--ok .qrev__v { color: var(--good); }
+.qrev--no .qrev__n { background: var(--bad-tint); color: var(--bad); }
+.qrev--no .qrev__v { color: var(--bad); }
+.qrev--skip .qrev__n { background: var(--gold-tint); color: var(--gold); }
+.qrev__body { padding: 0 var(--s4) var(--s4); border-top: 1px solid var(--line); }
+.qrev__body > * + * { margin-top: var(--s3); }
+.qrev__opts { list-style: none; display: grid; gap: 5px; margin-top: var(--s3); }
+.qrev__opts li { padding: 9px var(--s3); border-radius: var(--r-sm); border: 1px solid var(--line);
+  font-size: 14px; }
+.qrev__opts li em { font-style: normal; font-size: 11.5px; font-weight: 800; letter-spacing: .04em;
+  text-transform: uppercase; }
+.qrev__opts li.is-right { border-color: var(--good); background: var(--good-tint); color: var(--good); }
+.qrev__opts li.is-wrong { border-color: var(--bad); background: var(--bad-tint); color: var(--bad); }
+
+/* ---- where the time went ---- */
+.timesplit { display: grid; gap: 8px; }
+.timesplit__row { display: grid; grid-template-columns: 1fr 140px auto; gap: var(--s3);
+  align-items: center; font-size: 14px; }
+@media (max-width: 560px) { .timesplit__row { grid-template-columns: 1fr auto; }
+  .timesplit__row .bar { display: none; } }
+.bar--good i { background: var(--good); }
+.bar--bad i  { background: var(--bad); }
+.bar--gold i { background: var(--gold); }
+.qrev__t { flex: none; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; }
+.qrev__t.is-slow { color: var(--bad); font-weight: 800; }
+.qrev__f { flex: none; color: var(--gold); font-size: 12px; }

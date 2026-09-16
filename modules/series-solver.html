@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Series Solver — Reasoning & Quants Academy</title>
+<style>
+  :root{--acc:#8c3b2e;--acc-d:#5d2318;--gold:#d4a017;--sand:#f5f3ef;--card:#fff;--ink:#26221c;--muted:#8a8178;--green:#3e7d4f;--green-l:#e2f1e7;--red:#b3261e;--red-l:#fbe9e7;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif;}
+  body{background:var(--sand);color:var(--ink);min-height:100vh;}
+  header{background:linear-gradient(120deg,#8c3b2e,#5d2318);color:#fff;padding:22px 18px 54px;text-align:center;}
+  header .crumb{font-size:13px;opacity:.85;margin-bottom:6px;}
+  header .crumb a{color:#e9c05c;text-decoration:none;}
+  header h1{font-size:clamp(21px,4vw,30px);}
+  header p{opacity:.85;margin-top:5px;font-size:14.5px;}
+  .tabs{display:flex;justify-content:center;gap:8px;margin-top:-22px;flex-wrap:wrap;padding:0 10px;}
+  .tab{background:#fff;border:none;padding:11px 18px;border-radius:13px;cursor:pointer;font-size:14px;font-weight:700;color:var(--muted);box-shadow:0 3px 10px rgba(0,0,0,.12);transition:.2s;}
+  .tab.active{background:var(--ink);color:#fff;transform:translateY(-2px);}
+  main{max-width:1000px;margin:22px auto 56px;padding:0 14px;}
+  .panel{display:none;animation:fade .3s;}
+  .panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;}}
+  .card{background:var(--card);border-radius:16px;padding:20px 22px;box-shadow:0 3px 14px rgba(60,40,30,.08);margin-bottom:16px;}
+  .card h2{font-size:19px;color:var(--acc);margin-bottom:4px;}
+  .card .sub{color:var(--muted);font-size:14px;margin-bottom:12px;}
+  .btn{background:var(--acc);color:#fff;border:none;padding:11px 20px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+  .btn:hover{background:var(--acc-d);}
+  .btn.ghost{background:#f0e9e1;color:var(--ink);}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px;}
+  .g-card{background:#faf6f0;border-radius:12px;padding:13px 15px;border-top:4px solid var(--gold);}
+  .g-card b{font-size:14px;color:var(--acc);}
+  .g-card .ex{font-family:Consolas,monospace;font-size:14px;margin:6px 0;font-weight:700;}
+  .g-card p{font-size:12.5px;color:var(--muted);line-height:1.5;}
+  .q-box{background:#faf0ee;border-radius:12px;padding:20px 18px;border-left:5px solid var(--acc);text-align:center;}
+  .series{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;font-family:Consolas,monospace;}
+  .term{background:#fff;border:2px solid #e0d5bf;border-radius:10px;min-width:52px;padding:10px 8px;font-size:20px;font-weight:800;}
+  .term.qm{background:var(--acc);color:#fff;border-color:var(--acc);animation:pulse 1.4s infinite;}
+  @keyframes pulse{50%{transform:scale(1.08);}}
+  .options{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+  @media(max-width:560px){.options{grid-template-columns:1fr 1fr;}}
+  .opt{padding:13px;border:2px solid #e8dfd5;border-radius:10px;cursor:pointer;font-size:18px;font-weight:800;font-family:Consolas,monospace;text-align:center;transition:.15s;background:#fff;}
+  .opt:hover{border-color:var(--acc);}
+  .opt.correct{background:var(--green-l);border-color:var(--green);color:var(--green);}
+  .opt.wrong{background:var(--red-l);border-color:var(--red);color:var(--red);}
+  .opt:disabled{cursor:default;}
+  .solution{margin-top:16px;display:none;background:#fffdf3;border:1.5px dashed var(--gold);border-radius:10px;padding:16px;}
+  .chain{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;font-family:Consolas,monospace;margin:10px 0;}
+  .chain .t{background:#fff;border:2px solid #e0d5bf;border-radius:8px;min-width:46px;padding:7px 6px;font-size:17px;font-weight:800;text-align:center;}
+  .chain .op{background:var(--green);color:#fff;border-radius:14px;padding:3px 10px;font-size:13px;font-weight:800;margin:0 2px;}
+  .bars{display:flex;align-items:flex-end;gap:16px;justify-content:center;min-height:210px;padding:18px 12px 8px;background:#fdfaf3;border:2px solid #e8dfd5;border-radius:14px;}
+  .bcol{display:flex;flex-direction:column;align-items:center;gap:7px;}
+  .bbar{width:46px;background:linear-gradient(180deg,#b8890a,#8c3b2e);border-radius:8px 8px 3px 3px;transition:height .7s;}
+  .bbar.myst{background:repeating-linear-gradient(45deg,#e8dfd5,#e8dfd5 6px,#f5f3ef 6px,#f5f3ef 12px);border:2px dashed #c9bfa8;}
+  .bval{font-weight:800;font-size:14.5px;font-family:Consolas,monospace;}
+  .gaprow{display:flex;justify-content:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .gap{background:#fff;border:2px solid #e8dfd5;border-radius:10px;padding:7px 10px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted);}
+  .gap select,.gap input{padding:5px 6px;border:1.5px solid #ddd2bd;border-radius:7px;font-size:13px;width:54px;font-weight:700;}
+  .gap select{width:46px;}
+  .gap.ok{border-color:var(--green);background:var(--green-l);}
+  .gap.no{border-color:var(--red);background:var(--red-l);}
+  .rule-line{font-size:15px;font-weight:700;color:var(--acc);text-align:center;}
+  .q-nav{display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;}
+  .score{margin-left:auto;font-weight:800;color:var(--acc);}
+  .hint-chip{display:inline-block;background:#f3ede1;color:#8a7a5c;font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../index.html">← Reasoning & Quants Academy</a></div>
+  <h1>🔢 Series Solver</h1>
+  <p>Number &amp; letter sequences — watch the difference-chain draw itself and the pattern becomes obvious.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab(0,this)">📖 Pattern Gallery</button>
+  <button class="tab" onclick="showTab(1,this)">🎯 Practice Generator</button>
+  <button class="tab" onclick="showTab(2,this)">🕵️ Detective Mode</button>
+</div>
+
+<main>
+  <!-- GALLERY -->
+  <section class="panel active" id="panel0">
+    <div class="card">
+      <h2>The 8 Patterns That Cover 95% of Questions</h2>
+      <p class="sub">Always test in this order: differences → ratios → squares/cubes → alternate terms.</p>
+      <div class="gallery">
+        <div class="g-card"><b>1. Arithmetic (AP)</b><div class="ex">5, 9, 13, 17, <u>21</u></div><p>Constant difference (+4). The first thing to check, always.</p></div>
+        <div class="g-card"><b>2. Geometric (GP)</b><div class="ex">3, 6, 12, 24, <u>48</u></div><p>Constant ratio (×2). Differences grow fast — try dividing.</p></div>
+        <div class="g-card"><b>3. Squares & Cubes</b><div class="ex">4, 9, 16, 25, <u>36</u></div><p>n² or n³, sometimes ± a constant (n²+1: 2, 5, 10, 17…).</p></div>
+        <div class="g-card"><b>4. Growing differences</b><div class="ex">2, 4, 8, 14, 22, <u>32</u></div><p>Differences themselves form a series (+2, +4, +6, +8, +10).</p></div>
+        <div class="g-card"><b>5. Multiply & adjust</b><div class="ex">3, 7, 15, 31, <u>63</u></div><p>×2+1 each time. Variants: ×2−1, ×3−2…</p></div>
+        <div class="g-card"><b>6. Sum of previous</b><div class="ex">2, 3, 5, 8, 13, <u>21</u></div><p>Fibonacci family: each term = sum of the two before it.</p></div>
+        <div class="g-card"><b>7. Alternating twin series</b><div class="ex">1, 10, 3, 8, 5, 6, <u>7</u></div><p>Two series interleaved: odd positions +2, even positions −2.</p></div>
+        <div class="g-card"><b>8. Letter jumps</b><div class="ex">A, D, H, M, <u>S</u></div><p>Jumps of +3, +4, +5 positions. Convert letters to numbers (A=1)!</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE -->
+  <section class="panel" id="panel1">
+    <div class="card">
+      <h2>Practice Generator</h2>
+      <p class="sub">Unlimited series from all 8 patterns. Solve, then reveal the animated difference-chain.</p>
+      <div class="q-box">
+        <span class="hint-chip" id="qType">Find the next term</span>
+        <div class="series" id="qSeries"></div>
+      </div>
+      <div class="options" id="qOpts"></div>
+      <div class="solution" id="qSol"></div>
+      <div class="q-nav">
+        <button class="btn ghost" id="btnSol" onclick="revealSolution()">👁 Reveal the pattern</button>
+        <button class="btn" id="btnNext" onclick="genQuestion()" style="display:none;">Next series →</button>
+        <span class="score" id="qScore">Score: 0 / 0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- DETECTIVE MODE -->
+  <section class="panel" id="panel2">
+    <div class="card">
+      <h2>🕵️ Detective Mode — Build the Chain Yourself</h2>
+      <p class="sub">The bars draw the series. Figure out which operation hides in <b>every</b> gap, fill the chain, then predict the mystery term.</p>
+      <div class="bars" id="detBars"></div>
+      <div class="gaprow" id="detGaps"></div>
+      <div class="q-nav">
+        <button class="btn" onclick="detCheck()">✔ Test my chain &amp; prediction</button>
+        <button class="btn ghost" onclick="detReveal()">👁 Show the real chain</button>
+        <button class="btn ghost" onclick="detGen()">↻ New mystery</button>
+        <span class="score" id="detScore">Streak: 0</span>
+      </div>
+      <div class="solution" id="detSol"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+function showTab(i,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel'+i).classList.add('active');
+  btn.classList.add('active');
+}
+const AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+
+/* Each generator returns {terms:[6 values], label, chain:[ops between terms], rule} */
+const GENS=[
+ ()=>{ const a=rnd(2,20), d=rnd(2,9), t=[...Array(6)].map((_,i)=>a+d*i);
+   return {t, label:"Arithmetic series", chain:Array(5).fill("+"+d), rule:`Constant difference of +${d} — a pure AP.`}; },
+ ()=>{ const r=[2,3][rnd(0,1)], a=rnd(1,6), t=[...Array(6)].map((_,i)=>a*Math.pow(r,i));
+   return {t, label:"Geometric series", chain:Array(5).fill("×"+r), rule:`Each term ×${r} — a pure GP.`}; },
+ ()=>{ const k=rnd(0,3), c=rnd(0,2), t=[...Array(6)].map((_,i)=>(i+1+k)*(i+1+k)+c);
+   return {t, label:"Squares family", chain:null, rule:`Terms are n²${c?' + '+c:''} starting from n=${1+k}: ${(1+k)*(1+k)+c}, ${(2+k)*(2+k)+c}…`}; },
+ ()=>{ const a=rnd(2,12), d0=rnd(2,4), t=[a],ops=[];
+   for(let i=0;i<5;i++){ const d=d0+2*i; t.push(t[t.length-1]+d); ops.push("+"+d); }
+   return {t, label:"Growing differences", chain:ops, rule:`Differences grow by 2 each step: ${ops.join(', ')}.`}; },
+ ()=>{ const m=rnd(2,3), adj=rnd(0,1)?1:-1, a=rnd(2,5), t=[a],ops=[];
+   for(let i=0;i<5;i++){ t.push(t[t.length-1]*m+adj); ops.push("×"+m+(adj>0?"+1":"−1")); }
+   return {t, label:"Multiply & adjust", chain:ops, rule:`Each term = previous ×${m} ${adj>0?'+':'−'} 1.`}; },
+ ()=>{ const a=rnd(1,6), b=rnd(a+1,a+5), t=[a,b];
+   for(let i=2;i<6;i++) t.push(t[i-1]+t[i-2]);
+   return {t, label:"Fibonacci family", chain:null, rule:`Each term = sum of the previous two (${a}+${b}=${a+b}…).`}; },
+ ()=>{ const a1=rnd(1,10), d1=rnd(2,5), a2=rnd(16,30), d2=rnd(2,5)*(rnd(0,1)?1:-1), t=[];
+   for(let i=0;i<3;i++){ t.push(a1+d1*i); t.push(a2+d2*i); }   // one fixed step per sub-series
+   return {t, label:"Alternating twin series", chain:null, rule:`Two interleaved series — odd positions: ${t[0]}, ${t[2]}, ${t[4]} (+${d1}); even positions: ${t[1]}, ${t[3]}, ${t[5]} (${d2>0?'+':'−'}${Math.abs(d2)}).`}; },
+ ()=>{ // jumps are sized so the whole series fits inside A…Z — no wrap-around
+   const growing=Math.random()<0.6, b=growing?rnd(1,3):rnd(2,5);
+   const jumps=[...Array(5)].map((_,i)=>growing?b+i:b);
+   const start=rnd(0, 25-jumps.reduce((a,c)=>a+c,0));
+   const t=[AZ[start]]; let p=start;
+   jumps.forEach(j=>{ p+=j; t.push(AZ[p]); });
+   return {t, label:"Letter series", chain:jumps.map(j=>"+"+j),
+     rule:`Letter positions jump ${jumps.map(j=>'+'+j).join(', ')} — convert A=1, B=2… to see it.`, letters:true}; }
+];
+let qScore=0,qAns=0,cur=null,qChosen=false;
+function genQuestion(){
+  qChosen=false;
+  document.getElementById('qSol').style.display='none';
+  document.getElementById('btnSol').style.display='';
+  document.getElementById('btnNext').style.display='none';
+  cur=GENS[rnd(0,GENS.length-1)]();
+  const shown=cur.t.slice(0,5), ans=cur.t[5];
+  document.getElementById('qType').textContent=cur.letters?"Letter series — find the next letter":"Find the next term";
+  document.getElementById('qSeries').innerHTML=shown.map(v=>`<span class="term">${v}</span>`).join('')+`<span class="term qm">?</span>`;
+  // options
+  const opts=new Set([ans]);
+  if(cur.letters){
+    const i=AZ.indexOf(ans);
+    [i+1,i-1,i+2,i-2].forEach(j=>opts.add(AZ[(j+26)%26]));
+  }else{
+    [ans+1,ans-1,ans+2,ans+5,ans-3,ans+10].forEach(v=>opts.add(v));
+  }
+  let arr=[...opts].slice(0,4);
+  if(!arr.includes(ans)) arr[0]=ans;
+  arr=[...new Set(arr)].slice(0,4);
+  for(let i=arr.length-1;i>0;i--){ const j=rnd(0,i); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  cur.ans=ans;
+  document.getElementById('qOpts').innerHTML=arr.map(o=>`<button class="opt" onclick="answer(this,'${o}')">${o}</button>`).join('');
+}
+function answer(btn,o){
+  if(qChosen) return; qChosen=true; qAns++;
+  const ok=o==cur.ans;
+  document.querySelectorAll('#qOpts .opt').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent==cur.ans) b.classList.add('correct');
+    if(b===btn&&!ok) b.classList.add('wrong');
+  });
+  if(ok) qScore++;
+  document.getElementById('qScore').textContent=`Score: ${qScore} / ${qAns}`;
+  document.getElementById('btnNext').style.display='';
+}
+function revealSolution(){
+  const box=document.getElementById('qSol');
+  let chain='';
+  if(cur.letters){
+    // show A=1 positions under each letter, with the ACTUAL jump from the generator
+    chain='<div class="chain">'+cur.t.map((v,i)=>{
+      const p=AZ.indexOf(v)+1;
+      return `<span class="t">${v}<br><small style="color:var(--muted)">${p}</small></span>`+
+             (i<cur.chain.length?`<span class="op">${cur.chain[i]}</span>`:'');
+    }).join('')+'</div>';
+  }else if(cur.chain){
+    chain='<div class="chain">'+cur.t.map((v,i)=>
+      `<span class="t">${v}</span>${i<cur.chain.length?`<span class="op">${cur.chain[i]}</span>`:''}`).join('')+'</div>';
+  }
+  box.innerHTML=`<span class="hint-chip">${cur.label}</span>${chain}<p class="rule-line">${cur.rule}</p>`;
+  box.style.display='block';
+  document.getElementById('btnSol').style.display='none';
+  document.getElementById('btnNext').style.display='';
+}
+genQuestion();
+
+/* ============ DETECTIVE MODE ============ */
+const DET_GENS=[GENS[0],GENS[1],GENS[3]];   // AP, GP, growing differences — single-op gaps
+let det=null, detStreak=0;
+function detGen(){
+  det=DET_GENS[rnd(0,2)]();
+  const max=Math.max(...det.t);
+  document.getElementById('detBars').innerHTML=det.t.map((v,i)=>
+   `<div class="bcol"><span class="bval" id="detVal${i}">${i<5?v:'?'}</span><div class="bbar ${i===5?'myst':''}" style="height:${i<5?Math.max(10,v/max*170):66}px;"></div></div>`).join('');
+  document.getElementById('detGaps').innerHTML=det.t.slice(0,4).map((v,i)=>
+   `<div class="gap" id="detGap${i}"><span>${v} →</span><select id="detOp${i}"><option>+</option><option>−</option><option>×</option><option>÷</option></select><input type="number" id="detNum${i}" placeholder="?" step="any"></div>`).join('')+
+   `<div class="gap" style="background:#faf0ee;border-color:var(--acc);color:var(--acc);"><span>${det.t[4]} → </span><input type="number" id="detPred" placeholder="?" step="any" style="border-color:var(--acc);"></div>`;
+  document.getElementById('detSol').style.display='none';
+  document.getElementById('detSol').innerHTML='';
+}
+function detApply(op,n,v){ return op==='+'?v+n : op==='−'?v-n : op==='×'?v*n : (n?v/n:NaN); }
+function detCheck(){
+  let ok=0;
+  for(let i=0;i<4;i++){
+    const op=document.getElementById('detOp'+i).value, n=parseFloat(document.getElementById('detNum'+i).value);
+    const good=!isNaN(n)&&Math.abs(detApply(op,n,det.t[i])-det.t[i+1])<1e-9;
+    document.getElementById('detGap'+i).className='gap '+(good?'ok':'no');
+    if(good) ok++;
+  }
+  const pred=parseFloat(document.getElementById('detPred').value);
+  const hit=!isNaN(pred)&&Math.abs(pred-det.t[5])<1e-9;
+  if(ok===4&&hit){ detStreak++; document.getElementById('detVal5').textContent=det.t[5]; }
+  else if(ok===4&&!hit){ detStreak=0; }
+  document.getElementById('detScore').textContent=`Streak: ${detStreak}`;
+  const sol=document.getElementById('detSol');
+  sol.innerHTML=
+   (ok===4?'✅ <b>Chain correct!</b> ':'')+(ok<4?`Chain check: <b>${ok}/4</b> gaps correct — fix the red ones. `:'')+
+   (hit?`🎯 And the next term <b>${det.t[5]}</b> is right — mystery solved!`:(!isNaN(pred)?`Your prediction ${pred} ${ok===4?'is off — the next term is <b>'+det.t[5]+'</b>.':'— get all 4 gaps green first.'}`:''))+
+   `<br><span style="color:var(--muted);">${det.label}: ${det.rule}</span>`;
+  sol.style.display='block';
+}
+function detReveal(){
+  for(let i=0;i<4;i++){
+    const c=det.chain[i], op=c[0]==='×'?'×':(c[0]==='−'?'−':(c[0]==='÷'?'÷':'+'));
+    const num=parseFloat(c.slice(1).replace('−','-'));
+    document.getElementById('detOp'+i).value=op;
+    document.getElementById('detNum'+i).value=num;
+  }
+  document.getElementById('detPred').value=det.t[5];
+  detCheck();
+}
+detGen();
+</script>
+</body>
+</html>

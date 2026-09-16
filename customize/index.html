@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make it yours · Reasoning &amp; Quants Academy</title>
+<meta name="description" content="Set the name, colours, guide, exam rules and chapters, watch it change live, and download the one file that makes it yours.">
+<link rel="stylesheet" href="../assets/css/core.css">
+<style>
+  .cz { display: grid; grid-template-columns: 1fr 380px; gap: var(--s6); align-items: start;
+        padding: var(--s6) 0 var(--s8); }
+  @media (max-width: 940px) { .cz { grid-template-columns: 1fr; } }
+  .cz__side { position: sticky; top: 78px; display: grid; gap: var(--s4); }
+  @media (max-width: 940px) { .cz__side { position: static; } }
+  .fset { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface);
+          padding: var(--s5); margin-bottom: var(--s4); }
+  .fset > h2 { font-size: 18px; margin-bottom: 4px; }
+  .fset > .lede { font-size: 14px; margin-bottom: var(--s4); }
+  .fld { display: grid; gap: 5px; margin-bottom: var(--s4); }
+  .fld > label { font-size: 12px; font-weight: 800; letter-spacing: .05em;
+                 text-transform: uppercase; color: var(--ink-3); }
+  .fld > em { font-style: normal; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+  .fld input[type=text], .fld input[type=number], .fld textarea {
+    padding: 10px var(--s3); border: 1.5px solid var(--line); border-radius: var(--r-sm);
+    background: var(--surface-2); font-size: 15px; width: 100%; }
+  .fld textarea { min-height: 74px; resize: vertical; line-height: 1.5; }
+  .fld input:focus { border-color: var(--brand); outline: none; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+  .swatch { display: flex; align-items: center; gap: var(--s3); }
+  .swatch input[type=color] { width: 46px; height: 38px; padding: 0; border: 1.5px solid var(--line);
+    border-radius: var(--r-sm); background: none; cursor: pointer; flex: none; }
+  .toggles { display: grid; gap: 8px; }
+  .tg { display: flex; align-items: flex-start; gap: var(--s3); padding: 10px var(--s3);
+        border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+  .tg input { margin-top: 3px; width: 17px; height: 17px; flex: none; accent-color: var(--brand); }
+  .tg b { display: block; font-size: 14.5px; }
+  .tg span { font-size: 12.5px; color: var(--ink-3); line-height: 1.45; }
+  .prev { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden;
+          background: var(--canvas); }
+  .prev__bar { display: flex; align-items: center; gap: 8px; padding: 10px var(--s4);
+               background: var(--surface); border-bottom: 1px solid var(--line); }
+  .prev__mk { width: 26px; height: 26px; border-radius: 8px; flex: none; display: grid;
+              place-items: center; color: #fff; font-weight: 800; font-size: 12px; }
+  .prev__nm { font-weight: 800; font-size: 14px; letter-spacing: -.02em; }
+  .prev__body { padding: var(--s4); }
+  .prev__body h3 { font-size: 19px; margin-bottom: 6px; }
+  .prev__body p { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+  .prev__chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: var(--s3); }
+  .chip { font-size: 11.5px; font-weight: 750; padding: 4px 10px; border-radius: var(--r-pill);
+          border: 1px solid var(--line); }
+  .prev__acc { display: flex; gap: 6px; margin-top: var(--s4); }
+  .prev__acc i { flex: 1; height: 28px; border-radius: 8px; }
+  .out { font-family: var(--mono); font-size: 11.5px; white-space: pre; overflow: auto;
+         max-height: 200px; background: var(--surface-2); border: 1px solid var(--line);
+         border-radius: var(--r-sm); padding: var(--s3); line-height: 1.5; }
+  .warn { font-size: 12.5px; color: var(--bad); margin-top: 6px; }
+</style>
+</head>
+<body class="theme-brand">
+<div id="app"></div>
+
+<script type="module">
+import { DEFAULTS, resolve, BLOCK_START, BLOCK_END, applyTheme } from '../assets/js/config.js';
+import { topbar, wireLearnerChip, $ } from '../assets/js/shell.js';
+import { ACADEMIES } from '../assets/js/curriculum.js';
+applyTheme();
+
+/* The working copy. Starts from the shipped defaults, which is also what a
+   fresh download contains — so "reset" and "as it ships" are the same thing. */
+let draft = structuredClone(DEFAULTS);
+
+const CHAPTERS = Object.keys(ACADEMIES).flatMap(a =>
+  ACADEMIES[a].units.map(u => ({ key: `${a}:${u.n}`, academy: a, title: u.title, n: u.n })));
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const FEATURES = [
+  ['review', 'Review queue', 'Mixed sets drawn from whatever the schedule says is about to be forgotten.'],
+  ['practice', 'Chapter practice', 'One chapter’s own written questions.'],
+  ['drill', 'Endless drills', 'Generated sets, so a chapter never runs out.'],
+  ['reteach', 'Re-teaching', 'An idea kept getting wrong leads back to the lesson that taught it.'],
+  ['mock', 'Mock papers', 'Timed, mixed, negatively marked. The exam-shaped one.'],
+  ['achievements', 'Achievements', 'Badges earned by learning, never by turning up.'],
+  ['profiles', 'Learner profiles', 'Separate records for people sharing a browser.'],
+  ['modules', 'Original modules', 'The eight standalone tools the lessons grew out of.'],
+];
+
+function form() {
+  const d = draft;
+  return `
+  <div class="fset">
+    <h2>What it is called</h2>
+    <p class="lede">Titles, the top bar, the home page and the footer all read from these.</p>
+    <div class="fld"><label for="f-name">Full name</label>
+      <input type="text" id="f-name" data-p="identity.name" value="${esc(d.identity.name)}"></div>
+    <div class="row2">
+      <div class="fld"><label for="f-short">Short name (top bar)</label>
+        <input type="text" id="f-short" data-p="identity.short" value="${esc(d.identity.short)}"></div>
+      <div class="fld"><label for="f-sub">Stacked under it</label>
+        <input type="text" id="f-sub" data-p="identity.markSub" value="${esc(d.identity.markSub)}">
+        <em>Leave empty for none.</em></div>
+    </div>
+    <div class="fld"><label for="f-tag">Tagline</label>
+      <input type="text" id="f-tag" data-p="identity.tagline" value="${esc(d.identity.tagline)}">
+      <em>The last word is the one that gets the accent colour.</em></div>
+    <div class="fld"><label for="f-kick">Kicker line</label>
+      <input type="text" id="f-kick" data-p="identity.kicker" value="${esc(d.identity.kicker)}"></div>
+    <div class="fld"><label for="f-blurb">Home page blurb</label>
+      <textarea id="f-blurb" data-p="identity.blurb">${esc(d.identity.blurb)}</textarea></div>
+    <div class="fld"><label for="f-foot">Footer</label>
+      <input type="text" id="f-foot" data-p="identity.footer" value="${esc(d.identity.footer)}"></div>
+  </div>
+
+  <div class="fset">
+    <h2>The guide</h2>
+    <p class="lede">He is named in one place in the code and <b>nowhere</b> in the 65 lessons —
+      he speaks in the first person throughout — so renaming him really does rename him.
+      His voice is not a setting: it is what keeps 65 lessons sounding like one person.</p>
+    <div class="row2">
+      <div class="fld"><label for="f-guide">Name</label>
+        <input type="text" id="f-guide" data-p="guide.name" value="${esc(d.guide.name)}"></div>
+      <div class="fld"><label for="f-role">Described as</label>
+        <input type="text" id="f-role" data-p="guide.role" value="${esc(d.guide.role)}"></div>
+    </div>
+  </div>
+
+  <div class="fset">
+    <h2>Colour</h2>
+    <p class="lede">Three accents. Paper, ink and the whole dark-mode palette are derived from
+      them — exposing those is how a readable site stops being readable.</p>
+    <div class="row2">
+      <div class="fld"><label>Academy</label><div class="swatch">
+        <input type="color" data-p="theme.brand" value="${d.theme.brand}">
+        <input type="text" data-p="theme.brand" value="${d.theme.brand}"></div></div>
+      <div class="fld"><label>Reasoning</label><div class="swatch">
+        <input type="color" data-p="theme.reason" value="${d.theme.reason}">
+        <input type="text" data-p="theme.reason" value="${d.theme.reason}"></div></div>
+    </div>
+    <div class="fld" style="max-width:50%"><label>Quants</label><div class="swatch">
+      <input type="color" data-p="theme.quant" value="${d.theme.quant}">
+      <input type="text" data-p="theme.quant" value="${d.theme.quant}"></div></div>
+  </div>
+
+  <div class="fset">
+    <h2>The exam you are preparing for</h2>
+    <p class="lede">The mock reads all of this: the clock, the marking and the verdict.
+      Defaults are RPSC’s RAS Prelims.</p>
+    <div class="row2">
+      <div class="fld"><label for="f-eq">Questions in the real paper</label>
+        <input type="number" id="f-eq" data-p="exam.questions" min="10" max="500" value="${d.exam.questions}"></div>
+      <div class="fld"><label for="f-em">Minutes for it</label>
+        <input type="number" id="f-em" data-p="exam.minutes" min="5" max="600" value="${d.exam.minutes}"></div>
+    </div>
+    <div class="fld"><em id="paceNote"></em></div>
+    <div class="fld"><label for="f-pen">Marks deducted per wrong answer</label>
+      <input type="number" id="f-pen" data-p="exam.penalty" min="0" max="1" step="0.0833" value="${d.exam.penalty}">
+      <em>0 for no negative marking. This is what makes “leave it blank” a costed decision —
+        at 1/3 a blind guess between four is worth exactly nothing.</em></div>
+  </div>
+
+  <div class="fset">
+    <h2>The progress model</h2>
+    <p class="lede">The Leitner intervals are the spine: answer a concept right and it comes back
+      after that many days. Shorter means more revision and less new ground.</p>
+    <div class="fld"><label for="f-int">Days per box</label>
+      <input type="text" id="f-int" data-p="progress.intervals" value="${d.progress.intervals.join(', ')}">
+      <em>Must start at 0 and rise. Anything else is refused and the default is kept.</em>
+      <span class="warn hidden" id="intWarn">Not a valid ladder — must start at 0 and ascend.</span></div>
+    <div class="row2">
+      <div class="fld"><label for="f-goal">Daily XP goal</label>
+        <input type="number" id="f-goal" data-p="progress.dailyGoal" min="10" max="1000" value="${d.progress.dailyGoal}"></div>
+      <div class="fld"><label for="f-lxp">XP for a lesson</label>
+        <input type="number" id="f-lxp" data-p="progress.lessonXP" min="1" max="500" value="${d.progress.lessonXP}"></div>
+    </div>
+  </div>
+
+  <div class="fset">
+    <h2>What exists</h2>
+    <p class="lede">Turn a page off and it disappears from the navigation, the dashboard and the
+      next-steps track together — not merely from the menu.</p>
+    <div class="toggles">${FEATURES.map(([k, name, why]) => `
+      <label class="tg"><input type="checkbox" data-f="${k}" ${d.features[k] ? 'checked' : ''}>
+        <span><b>${name}</b><span>${why}</span></span></label>`).join('')}</div>
+  </div>
+
+  <div class="fset">
+    <h2>Which chapters</h2>
+    <p class="lede">Unticked chapters vanish from the path, the review index, the drills and the
+      mock at once. Useful for a shorter course, or for releasing one chapter at a time.</p>
+    <div class="toggles">${CHAPTERS.map(c => `
+      <label class="tg"><input type="checkbox" data-ch="${c.key}"
+             ${d.content.hideChapters.includes(c.key) ? '' : 'checked'}>
+        <span><b>${esc(c.title)}</b><span>${c.academy} · chapter ${c.n}</span></span></label>`).join('')}</div>
+  </div>`;
+}
+
+function preview() {
+  const c = resolve(draft);
+  const main = c.identity.short;
+  const sub = c.identity.markSub;
+  const t = c.identity.tagline.replace(/\.$/, '').split(/\s+/);
+  const tail = t.length > 1 ? t.pop() : t[0];
+  const on = FEATURES.filter(([k]) => c.features[k]).length;
+  const chapters = CHAPTERS.filter(x => !c.content.hideChapters.includes(x.key)
+    && c.content.academies[x.academy]).length;
+
+  return `
+    <div class="prev">
+      <div class="prev__bar">
+        <span class="prev__mk" style="background:${c.theme.brand}">${esc((main[0] || 'A').toUpperCase())}</span>
+        <span class="prev__nm">${esc(main)}${sub ? ` <small style="opacity:.6">${esc(sub)}</small>` : ''}</span>
+      </div>
+      <div class="prev__body">
+        <p style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">
+          ${esc(c.identity.kicker).slice(0, 70)}</p>
+        <h3 style="margin-top:6px">${esc(t.join(' '))}${t.length ? ' ' : ''}<span
+          style="color:${c.theme.brand}">${esc(tail)}</span>.</h3>
+        <p>${esc(c.identity.blurb).slice(0, 150)}…</p>
+        <div class="prev__chips">
+          <span class="chip" style="border-color:${c.theme.brand};color:${c.theme.brand}">${esc(c.guide.name)}</span>
+          <span class="chip">${chapters} chapters</span>
+          <span class="chip">${on} of ${FEATURES.length} features</span>
+          <span class="chip">${Math.round(c.exam.secondsPerQuestion)}s a question</span>
+        </div>
+        <div class="prev__acc">
+          <i style="background:${c.theme.brand}"></i>
+          <i style="background:${c.theme.reason}"></i>
+          <i style="background:${c.theme.quant}"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="fset" style="margin:0">
+      <h2 style="font-size:16px">Take it away</h2>
+      <p class="lede" style="font-size:13px">This downloads one file. Put it at
+        <code>assets/js/config.js</code>, replacing what is there, and reload — that is the whole
+        installation.</p>
+      <button class="btn btn--lg btn--block" id="dl">Download config.js</button>
+      <button class="btn btn--ghost btn--block" id="reset" style="margin-top:8px">Reset to defaults</button>
+      <p class="lede" style="font-size:12.5px;margin-top:var(--s3)">
+        Prefer everything in one go? <code>node tools/package.js</code> builds a zip of the whole
+        site with this configuration already in it.</p>
+    </div>
+
+    <div class="fset" style="margin:0">
+      <h2 style="font-size:16px">What changed</h2>
+      <div class="out" id="diff"></div>
+    </div>`;
+}
+
+/* Only what differs from the shipped defaults — a wall of unchanged settings
+   tells a reader nothing about what they have actually done. */
+function diffLines(obj = draft, base = DEFAULTS, path = []) {
+  const out = [];
+  for (const k of Object.keys(base)) {
+    const a = obj?.[k], b = base[k];
+    if (b && typeof b === 'object' && !Array.isArray(b)) { out.push(...diffLines(a, b, [...path, k])); continue; }
+    const same = Array.isArray(b) ? JSON.stringify(a) === JSON.stringify(b) : a === b;
+    if (!same) out.push(`${[...path, k].join('.')} = ${JSON.stringify(a)}`);
+  }
+  return out;
+}
+
+function setPath(p, v) {
+  const bits = p.split('.');
+  let o = draft;
+  for (let i = 0; i < bits.length - 1; i++) o = o[bits[i]];
+  o[bits[bits.length - 1]] = v;
+}
+
+function render() {
+  $('#app').innerHTML = `
+    ${topbar({ back: '../' })}
+    <div class="wrap">
+      <header style="padding:var(--s7) 0 0">
+        <p class="eyebrow">Customize</p>
+        <h1>Make it yours.</h1>
+        <p class="lede" style="max-width:64ch">Everything below writes to one file. Nothing here
+          can change what a question <em>asks</em> — the lessons, the answer keys and the difficulty
+          tiers are the part that was verified, and a knob that could make a lesson wrong is not
+          a feature.</p>
+      </header>
+      <div class="cz">
+        <div id="formCol">${form()}</div>
+        <aside class="cz__side" id="sideCol">${preview()}</aside>
+      </div>
+    </div>`;
+  wireLearnerChip();
+  wire();
+  refresh();
+}
+
+function refresh() {
+  $('#sideCol').innerHTML = preview();
+  wireSide();
+  const lines = diffLines();
+  $('#diff').textContent = lines.length ? lines.join('\n') : 'Nothing changed yet — this is the site as it ships.';
+  const c = resolve(draft);
+  const pace = document.getElementById('paceNote');
+  if (pace) pace.textContent =
+    `${c.exam.questions} questions in ${c.exam.minutes} minutes is ${Math.round(c.exam.secondsPerQuestion)} seconds each — the pace every mock is set at.`;
+}
+
+function wire() {
+  document.querySelectorAll('[data-p]').forEach(el => {
+    el.oninput = () => {
+      const p = el.dataset.p;
+      let v = el.value;
+      if (p === 'progress.intervals') {
+        const nums = v.split(/[,\s]+/).filter(Boolean).map(Number);
+        const ok = nums.length >= 3 && nums[0] === 0 && nums.every(Number.isInteger)
+          && nums.every((x, i) => i === 0 || x > nums[i - 1]);
+        document.getElementById('intWarn').classList.toggle('hidden', ok);
+        if (!ok) return;                       // keep the last good ladder
+        v = nums;
+      } else if (el.type === 'number') {
+        v = Number(v);
+      }
+      setPath(p, v);
+      /* Colour has two inputs on one value; keep them in step. */
+      if (p.startsWith('theme.')) {
+        document.querySelectorAll(`[data-p="${p}"]`).forEach(o => { if (o !== el) o.value = el.value; });
+      }
+      refresh();
+    };
+  });
+  document.querySelectorAll('[data-f]').forEach(el => {
+    el.onchange = () => { draft.features[el.dataset.f] = el.checked; refresh(); };
+  });
+  document.querySelectorAll('[data-ch]').forEach(el => {
+    el.onchange = () => {
+      const key = el.dataset.ch;
+      const set = new Set(draft.content.hideChapters);
+      el.checked ? set.delete(key) : set.add(key);
+      draft.content.hideChapters = [...set].sort();
+      /* An academy with every chapter hidden is an academy switched off; say so
+         rather than leaving an empty gameboard behind. */
+      for (const a of Object.keys(draft.content.academies)) {
+        const all = CHAPTERS.filter(c => c.academy === a);
+        draft.content.academies[a] = !all.every(c => set.has(c.key));
+      }
+      refresh();
+    };
+  });
+}
+
+function wireSide() {
+  document.getElementById('dl').onclick = download;
+  document.getElementById('reset').onclick = () => {
+    if (!confirm('Throw away your changes and go back to the site as it ships?')) return;
+    draft = structuredClone(DEFAULTS);
+    render();
+  };
+}
+
+/**
+ * Fetch config.js and swap its DEFAULTS block for the draft.
+ *
+ * Not re-serialised from scratch: the file carries validation, splice markers
+ * and a long explanatory header, and a customizer that rewrote all of that
+ * would be a second copy of the rules waiting to drift. Splicing means a
+ * downloaded config is the same file with different data in it.
+ */
+async function download() {
+  const btn = document.getElementById('dl');
+  btn.disabled = true; btn.textContent = 'Building…';
+  try {
+    const src = await fetch('../assets/js/config.js').then(r => r.text());
+    const a = src.indexOf(BLOCK_START);
+    const b = src.indexOf(BLOCK_END, a);
+    if (a < 0 || b < 0) throw new Error('markers missing');
+    const body = JSON.stringify(draft, null, 2).replace(/^(\s*)"([A-Za-z_]\w*)":/gm, '$1$2:');
+    const out = src.slice(0, a) + `export const DEFAULTS = ${body};\n\n` + src.slice(b + 3);
+
+    const url = URL.createObjectURL(new Blob([out], { type: 'text/javascript' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = 'config.js';
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    btn.textContent = 'Downloaded — put it at assets/js/config.js';
+  } catch (e) {
+    btn.textContent = 'Could not build the file';
+    console.error(e);
+  } finally {
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Download config.js'; }, 2600);
+  }
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review · Reasoning &amp; Quants Academy</title>
+<meta name="description" content="A mixed practice set drawn from whatever the spaced-repetition queue says you are about to forget.">
+<link rel="stylesheet" href="../assets/css/core.css">
+<link rel="stylesheet" href="../assets/css/lesson.css">
+<link rel="stylesheet" href="../assets/css/widgets.css">
+</head>
+<body class="theme-brand">
+<div id="app"></div>
+
+<script type="module">
+import { applyTheme } from '../assets/js/config.js';
+applyTheme();
+import { runLesson } from '../assets/js/runner.js';
+import { makeSession } from '../assets/js/review.js';
+
+const size = Math.min(20, Math.max(4, +new URLSearchParams(location.search).get('n') || 8));
+const app = document.getElementById('app');
+
+app.innerHTML = `<div class="wrap" style="padding:var(--s8) 0;text-align:center">
+  <p class="lede">Assembling your set…</p></div>`;
+
+makeSession(size).then(({ session, questions, dueCount }) => {
+  if (!session) {
+    app.innerHTML = `
+      <div class="wrap" style="padding:var(--s8) 0;text-align:center">
+        <h1>Nothing to review yet</h1>
+        <p class="lede" style="margin:var(--s4) auto var(--s6);max-width:46ch">
+          Finish a lesson first. Every question you answer registers the idea behind it, and those
+          ideas come back here on a widening schedule.</p>
+        <a class="btn btn--lg" href="../">Back to the dashboard</a>
+      </div>`;
+    return;
+  }
+  document.title = `Review · ${questions.length} questions`;
+  runLesson(session);
+});
+</script>
+</body>
+</html>

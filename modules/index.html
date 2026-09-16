@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Original practice modules · Reasoning &amp; Quants Academy</title>
+<link rel="stylesheet" href="../assets/css/core.css">
+<style>
+  .modtile h3 a { color: inherit; text-decoration: none; }
+  .modtile h3 a:hover { color: var(--accent, var(--brand)); }
+  .modtile__tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s3); }
+  .modtile__tabs a { font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: var(--r-pill);
+    background: var(--surface-2); color: var(--ink-2); text-decoration: none; }
+  .modtile__tabs a:hover { background: var(--brand-tint); color: var(--brand); }
+</style>
+</head>
+<body class="theme-brand">
+<div id="bar"></div>
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow hero__kicker"><a href="../" style="color:var(--brand)">← Academy</a></p>
+    <h1>Original practice modules</h1>
+    <p class="lede">Each section of each tool has a page of its own — pick one below. The eight standalone tools this project began as. They still work exactly as before,
+      and they are the source material for Academy lessons still marked <em>Coming soon</em>.
+      Question generators here are covered by <code>tools/verify-generators.js</code>.</p>
+  </header>
+
+  <div class="tiles" style="margin-bottom:var(--s8)">
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">👪</div>
+      <div><h3><a href="blood-relations/learn-the-symbols/">Blood Relation Trainer</a></h3></div></div><p>Five-symbol language, live tree builder, 8 exam questions.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="blood-relations/learn-the-symbols/">📖 Learn the Symbols</a><a href="blood-relations/tree-builder/">🌳 Tree Builder</a><a href="blood-relations/practice-quiz/">🎯 Practice Quiz</a></nav></div>
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">⭕</div>
+      <div><h3><a href="venn-logic/learn-the-relations/">Venn &amp; Syllogism Logic</a></h3></div></div><p>Set relations, syllogisms, sorting game, break-the-conclusion.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="venn-logic/learn-the-relations/">📖 Learn the Relations</a><a href="venn-logic/pick-the-venn/">🎯 Pick the Venn</a><a href="venn-logic/syllogism/">🧠 Syllogism</a><a href="venn-logic/sort-and-break/">🧩 Sort &amp; Break</a></nav></div>
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">🪑</div>
+      <div><h3><a href="seating-arrangement/learn/">Seating &amp; Ranking</a></h3></div></div><p>Puzzle board with animated solutions, ranking generator.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="seating-arrangement/learn/">📖 Learn</a><a href="seating-arrangement/puzzle-board/">🧩 Puzzle Board</a><a href="seating-arrangement/ranking-line/">📏 Ranking Line</a></nav></div>
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">🧭</div>
+      <div><h3><a href="direction-sense/learn/">Direction Sense Walker</a></h3></div></div><p>Walk simulator, generated quizzes, sun &amp; shadow studio.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="direction-sense/learn/">📖 Learn</a><a href="direction-sense/walk-simulator/">🚶 Walk Simulator</a><a href="direction-sense/practice-quiz/">🎯 Practice Quiz</a><a href="direction-sense/shadow-studio/">🌅 Shadow Studio</a></nav></div>
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">🔐</div>
+      <div><h3><a href="coding-lab/learn-the-codes/">Coding–Decoding Lab</a></h3></div></div><p>Cipher wheel, five code families, crack-the-shift game.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="coding-lab/learn-the-codes/">📖 Learn the Codes</a><a href="coding-lab/practice-generator/">🎯 Practice Generator</a><a href="coding-lab/play-and-crack/">🎮 Play &amp; Crack</a></nav></div>
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">🔢</div>
+      <div><h3><a href="series-solver/pattern-gallery/">Series Solver</a></h3></div></div><p>Eight patterns, difference chains, detective mode.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="series-solver/pattern-gallery/">📖 Pattern Gallery</a><a href="series-solver/practice-generator/">🎯 Practice Generator</a><a href="series-solver/detective-mode/">🕵️ Detective Mode</a></nav></div>
+    <div class="tile theme-reason modtile"><div class="tile__top"><div class="tile__badge">🔺</div>
+      <div><h3><a href="figure-counting/formula-shelf/">Figure Counting</a></h3></div></div><p>Formula shelf, flash reveal, click-to-count mode.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="figure-counting/formula-shelf/">📖 Formula Shelf</a><a href="figure-counting/count-and-reveal/">🎯 Count & Reveal</a><a href="figure-counting/you-count/">🖱 You Count</a></nav></div>
+    <div class="tile theme-quant modtile"><div class="tile__top"><div class="tile__badge">🧮</div>
+      <div><h3><a href="quants-zone/ratio-p-and-l/">Quants Zone</a></h3></div></div><p>Ratio, SI/CI, area, averages, P&amp;C, dice, DI lab.</p>
+      <nav class="modtile__tabs" aria-label="Sections"><a href="quants-zone/ratio-p-and-l/">⚖️ Ratio · % · P&L</a><a href="quants-zone/si-vs-ci/">📈 SI vs CI</a><a href="quants-zone/area/">📐 Area</a><a href="quants-zone/averages/">📊 Averages</a><a href="quants-zone/counting-and-chance/">🎲 Counting & Chance</a><a href="quants-zone/di-lab/">📉 DI Lab</a></nav></div>
+  </div>
+  <footer class="foot"><a href="../">← Back to the Academy</a></footer>
+</div>
+<script type="module">
+import { applyTheme } from '../assets/js/config.js';
+import { topbar, wireLearnerChip } from '../assets/js/shell.js';
+applyTheme();
+const bar = document.getElementById('bar');
+bar.innerHTML = topbar({ tab: 'modules' });
+wireLearnerChip(bar);
+</script>
+</body>
+</html>

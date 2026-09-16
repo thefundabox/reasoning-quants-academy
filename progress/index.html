@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Progress · Reasoning &amp; Quants Academy</title>
+<meta name="description" content="Your dashboard — today's goal, accuracy, the review queue, mock papers and achievements.">
+<link rel="stylesheet" href="../assets/css/core.css">
+</head>
+<body class="theme-brand">
+<div id="app"></div>
+<script type="module">
+import * as store from '../assets/js/store.js';
+import { topbar, dashboard, trackPanel, badgePanel, wireLearnerChip, crumbs, $ } from '../assets/js/shell.js';
+import { refreshAchievements } from '../assets/js/progress.js';
+import { CONFIG, applyTheme } from '../assets/js/config.js';
+import { href } from '../assets/js/routes.js';
+
+applyTheme();
+document.title = `Progress · ${CONFIG.identity.name}`;
+/* Idempotent — see the note on the home page. */
+refreshAchievements();
+
+$('#app').innerHTML = `
+  ${topbar({ tab: 'progress' })}
+  <div class="wrap">
+    ${crumbs([{ label: 'Home', href: href('') }, { label: 'Progress' }])}
+    <header class="hero">
+      <p class="eyebrow hero__kicker">${store.activeProfile().name} · saved on this device</p>
+      <h1>Your dashboard</h1>
+      <p class="lede">What you have done, what is due, and what the record says to do next.</p>
+    </header>
+    ${dashboard()}
+    <div class="trackrow">
+      ${trackPanel()}
+    </div>
+    <div style="margin-top:var(--s4)">${badgePanel()}</div>
+    <footer class="foot"><a href="${href('')}">← Home</a></footer>
+  </div>`;
+wireLearnerChip();
+</script>
+</body>
+</html>

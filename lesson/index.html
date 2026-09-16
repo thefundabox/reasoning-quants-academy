@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moved · Reasoning &amp; Quants Academy</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../assets/css/core.css">
+</head>
+<body class="theme-brand">
+<div class="wrap" style="padding:var(--s8) 0;text-align:center">
+  <p class="lede">Taking you to the lesson…</p>
+  <p style="margin-top:var(--s4)"><a class="btn" href="../">Go to the academy</a></p>
+</div>
+<script type="module">
+/* Every lesson now has an address of its own. This page only exists so links and
+   bookmarks made before that — including the query-string form a saved
+   progress record may still hold — land where they meant to. */
+import * as R from '../assets/js/routes.js';
+const q = new URLSearchParams(location.search);
+const id = q.get('id');
+location.replace(R.href((id && R.lessonPath(id)) || ''));
+</script>
+</body>
+</html>
