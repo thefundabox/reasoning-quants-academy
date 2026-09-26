@@ -283,6 +283,18 @@ async function kinship() {
     [['father'], 'father'],
     [['father', 'father', 'brother'], 'great-uncle'],
     [[], 'you'],
+    /* Sibling-then-parent CANCELS: siblings share their parents. Every case
+       above put the sibling step after the climb, which is why the drill spent
+       months telling learners that their sister's mother was their aunt. */
+    [['sister', 'mother'], 'mother'],
+    [['brother', 'father'], 'father'],
+    [['sister', 'father'], 'father'],
+    [['brother', 'mother', 'mother'], 'grandmother'],
+    [['sister', 'father', 'brother'], 'uncle'],
+    [['brother', 'brother', 'father'], 'father'],
+    [['sister', 'mother', 'sister'], 'aunt'],
+    [['brother', 'father', 'father'], 'grandfather'],
+    [['sister', 'son'], 'nephew'],
   ];
   CASES.forEach(([path, want]) =>
     check(`kinship ${path.join('→') || '(empty)'}`, termFor(path).term === want,
@@ -292,7 +304,69 @@ async function kinship() {
   // because only the word "only" in a question can resolve it.
   check('father→son flagged ambiguous', termFor(['father', 'son']).ambiguous === true, 'not flagged');
   check('father→brother not ambiguous', termFor(['father', 'brother']).ambiguous === false, 'wrongly flagged');
-  console.log(`  ${CASES.length + 2} kinship chains checked`);
+  check('sister→mother not ambiguous', termFor(['sister', 'mother']).ambiguous === false, 'wrongly flagged');
+  /* Two sibling steps, or a spouse step mid-chain, cannot be named by a
+     four-option question; they must be flagged so the generators skip them. */
+  check('sister→sister flagged ambiguous', termFor(['sister', 'sister']).ambiguous === true, 'not flagged');
+  check('mother→brother→sister flagged ambiguous',
+    termFor(['mother', 'brother', 'sister']).ambiguous === true, 'she may be your mother');
+  check('husband→mother is named an in-law, not a mother',
+    /in-law/.test(termFor(['husband', 'mother']).term), termFor(['husband', 'mother']).term);
+
+  /* ---- the same chains, worked out from an actual family tree ----
+
+     A second opinion that shares no code with termFor: build the people the
+     chain describes — siblings get the same two parents, a parent step reuses
+     the parent already there — and then name the last one with the relation
+     reader from the RAS bank. Where that reader has no word for the answer
+     (cousins, great-uncles) the case is skipped rather than fudged. */
+  const { relationName } = await import('../assets/js/ras/relations.js');
+  function tree(path) {
+    const P = { You: { id: 'You', sex: 'm', parents: null, spouse: null } };
+    let n = 0;
+    const mk = (sex, parents = null) => { const id = `p${++n}`; P[id] = { id, sex, parents, spouse: null }; return id; };
+    const parentsOf = x => {
+      if (!P[x].parents) {
+        const f = mk('m'), m = mk('f');
+        P[f].spouse = m; P[m].spouse = f;
+        P[x].parents = [f, m];
+      }
+      return P[x].parents;
+    };
+    let cur = 'You';
+    for (const k of path) {
+      if (k === 'father' || k === 'mother') cur = parentsOf(cur)[k === 'father' ? 0 : 1];
+      else if (k === 'brother' || k === 'sister') cur = mk(k === 'brother' ? 'm' : 'f', parentsOf(cur));
+      else {
+        let sp = P[cur].spouse;
+        if (!sp) { sp = mk(P[cur].sex === 'm' ? 'f' : 'm'); P[cur].spouse = sp; P[sp].spouse = cur; }
+        /* father first, mother second — the same order parentsOf() uses, or a
+           "father" step later in the chain walks to the mother. */
+        const pair = P[cur].sex === 'm' ? [cur, sp] : [sp, cur];
+        cur = mk(k === 'son' ? 'm' : 'f', pair);
+      }
+    }
+    return { P, cur };
+  }
+  const WALK = ['father', 'mother', 'brother', 'sister', 'son', 'daughter'];
+  const R = (() => { let a = 20260926; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })();
+  let modelled = 0, disagreed = 0, skipped = 0;
+  for (let i = 0; i < 4000; i++) {
+    const path = Array.from({ length: 1 + Math.floor(R() * 3) }, () => WALK[Math.floor(R() * WALK.length)]);
+    const t = termFor(path);
+    if (t.ambiguous || t.term === 'you') { skipped++; continue; }
+    const { P, cur } = tree(path);
+    const want = cur === 'You' ? 'you' : relationName(P, cur, 'You');
+    if (!want) { skipped++; continue; }                 // no word for it: cousin, great-uncle
+    modelled++;
+    if (want !== t.term) {
+      disagreed++;
+      if (disagreed < 4) console.log(`  FAIL kinship model: your ${path.join("'s ")}'s — tree says ${want}, ladder says ${t.term}`);
+    }
+  }
+  check('kinship: the ladder agrees with a family tree built from the same chain',
+    disagreed === 0, `${disagreed} of ${modelled}`);
+  console.log(`  ${CASES.length + 7} kinship chains checked, ${modelled} more against a built family tree`);
 }
 
 /* ---------------- Academy: compass + walk logic ---------------- */

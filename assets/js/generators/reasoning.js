@@ -39,8 +39,15 @@ const TERM_LEVEL = {
   son: -1, daughter: -1, nephew: -1, niece: -1,
   grandfather: 2, grandmother: 2, 'great-uncle': 2, 'great-aunt': 2,
   grandson: -2, granddaughter: -2,
+  'great-grandfather': 3, 'great-grandmother': 3,
+  'great-grandson': -3, 'great-granddaughter': -3,
+  /* A chain can reach a marriage without a spouse step in it: the father of
+     your sister's son is your brother-in-law. */
+  'father-in-law': 1, 'mother-in-law': 1, 'brother-in-law': 0, 'sister-in-law': 0,
+  'son-in-law': -1, 'daughter-in-law': -1,
 };
-const SIDE = new Set(['uncle', 'aunt', 'cousin', 'nephew', 'niece', 'great-uncle', 'great-aunt']);
+const SIDE = new Set(['uncle', 'aunt', 'cousin', 'nephew', 'niece', 'great-uncle', 'great-aunt',
+  'father-in-law', 'mother-in-law', 'brother-in-law', 'sister-in-law', 'son-in-law', 'daughter-in-law']);
 const lvlWord = n => (n === 0 ? 'your own generation'
   : `${Math.abs(n)} level${Math.abs(n) > 1 ? 's' : ''} ${n > 0 ? 'above' : 'below'} you`);
 
@@ -66,7 +73,11 @@ const WORDS = ['TIGER', 'MANGO', 'DELHI', 'JAIPUR', 'PLANT', 'CROWN', 'RIVER', '
 const STEP_WORDS = ['father', 'mother', 'brother', 'sister', 'son', 'daughter'];
 const TERMS = ['father', 'mother', 'brother', 'sister', 'son', 'daughter', 'uncle', 'aunt',
                'nephew', 'niece', 'cousin', 'grandfather', 'grandmother', 'grandson',
-               'granddaughter', 'great-uncle', 'great-aunt'];
+               'granddaughter', 'great-uncle', 'great-aunt',
+               /* Four steps can reach a third generation, and a distractor list that
+                  cannot name the answer's own level is no test of the level rule. */
+               'great-grandfather', 'great-grandmother', 'great-grandson', 'great-granddaughter',
+               'brother-in-law', 'sister-in-law', 'father-in-law', 'mother-in-law'];
 
 export const relationChain = {
   id: 'rel-chain', chapter: 'reasoning:2',
@@ -79,9 +90,23 @@ export const relationChain = {
       path = Array.from({ length: R.int(byTier(tier, 2, 2, 3), byTier(tier, 2, 3, 4)) },
         () => R.pick(STEP_WORDS));
       t = termFor(path);
-      if (!t.ambiguous && t.term !== 'you') break;
+      /* `termFor` returns no word at all for a chain English does not name in
+         one term — those get redrawn like the ambiguous ones. */
+      if (t.term && !t.ambiguous && t.term !== 'you') break;
     }
     const phrase = 'your ' + path.map(k => `<b>${k}</b>'s`).join(' ').replace(/'s$/, '');
+    /* Levels alone do not settle a chain where a sibling step sits next to a
+       parent or child step: siblings SHARE their parents, so your sister's
+       mother is your own mother. Say so, in the cases where it decides the
+       answer — this is the rule the generator itself got wrong for months. */
+    const shares = path.some((k, i) => i > 0 &&
+      ((['brother', 'sister'].includes(path[i - 1]) && ['father', 'mother'].includes(k)) ||
+       (['son', 'daughter'].includes(path[i - 1]) && ['brother', 'sister'].includes(k))));
+    const sharesNote = shares
+      ? `<br><br>Watch the sibling step: brothers and sisters <b>share their parents</b>, so
+         "your sister's mother" is your own mother, not an aunt — and "your son's brother" is
+         another son of yours. A sibling step next to a parent or child step cancels out.`
+      : '';
     /* A wrong relation term is wrong in a knowable way: it sits at the wrong
        LEVEL. Naming that is more use than "no, try again" — the whole lesson is
        that each parent step climbs one level and each child step drops one. */
@@ -94,11 +119,11 @@ export const relationChain = {
       whyRight: `Walk it, do not picture it. ${path.map((k, i) =>
         `step ${i + 1}: <b>${k}</b>`).join(' → ')}. Each parent step climbs a level, each child
         step drops one, and brother/sister move sideways without changing level — which lands on
-        <b>${t.term}</b>.`,
+        <b>${t.term}</b>.${sharesNote}`,
       whyWrong: `Take one step at a time from yourself, and track only the LEVEL.<br><br>
         ${path.map((k, i) => `${i + 1}. your ${k}`).join('<br>')}<br><br>
         Parent steps go up, child steps go down, sibling and spouse steps stay level.
-        The answer is <b>${t.term}</b>.`,
+        The answer is <b>${t.term}</b>.${sharesNote}`,
       /* The chain drawn as the tree the chapter teaches, from the same steps —
          so the answer can be read off a picture instead of a sentence. */
       figure: (() => {
