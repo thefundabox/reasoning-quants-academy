@@ -148,6 +148,25 @@ async function coursePages() {
     }
   }
 
+  /* The RAS bank: its own tab, one page per topic, plus the mixed paper. */
+  if (CONFIG.features.rasDrills) {
+    const { RAS_TOPICS } = await import('../assets/js/ras/index.js');
+    add({
+      path: R.rasPath(), theme: 'theme-brand', css: RUN,
+      title: `RAS Practise Drills · ${site}`,
+      description: 'Questions modelled on the RAS Prelims papers themselves — every archetype the RPSC sets, in fresh numbers.',
+      script: rel => `import { rasIndexPage } from '${rel}assets/js/pages.js';\nrasIndexPage();`,
+    });
+    for (const t of [...RAS_TOPICS, { id: 'mixed', name: 'Mixed paper', blurb: 'Every topic, mixed the way the paper mixes them.' }]) {
+      add({
+        path: R.rasTopicPath(t.id), theme: 'theme-brand', css: RUN,
+        title: `${t.name} · RAS Practise Drills · ${site}`,
+        description: t.blurb,
+        script: rel => `import { rasTopicPage } from '${rel}assets/js/pages.js';\nrasTopicPage(${JSON.stringify(t.id)});`,
+      });
+    }
+  }
+
   const index = await buildIndex();
   for (const [id, qs] of index.byConcept) {
     add({
@@ -221,7 +240,8 @@ async function main() {
   console.log(`  chapters ${count(p => /^(reasoning|quants)\/\d+-[^/]+\/$/.test(p))}` +
               ` · lessons ${count(p => /^(reasoning|quants)\/\d+-[^/]+\/[^/]+\/$/.test(p) && !/\/(practice|drill)\/$/.test(p))}` +
               ` · practice ${count(p => /\/practice\/$/.test(p))} · drills ${count(p => /\/drill\/$/.test(p))}` +
-              ` · re-teach ${count(p => p.startsWith('reteach/'))} · module tabs ${count(p => p.startsWith('modules/'))}`);
+              ` · re-teach ${count(p => p.startsWith('reteach/'))} · module tabs ${count(p => p.startsWith('modules/'))}` +
+              ` · RAS drills ${count(p => p.startsWith('ras-drills/'))}`);
 }
 
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });

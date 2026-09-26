@@ -731,3 +731,36 @@ a.tl__row:hover { border-color: var(--accent); transform: translateX(2px); }
 .pager__i--next { text-align: right; }
 .pager__i--empty { border: 0; background: none; }
 @media (max-width: 620px) { .pager { grid-template-columns: 1fr; } .pager__i--empty { display: none; } }
+
+/* ---------- MOBILE SIGN-IN ---------- */
+.who__av { position: relative; }
+.who__dot { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--good); box-shadow: 0 0 0 2px var(--surface); }
+.who__phone { display: block; font-size: 11px; font-weight: 600; color: var(--ink-3); }
+.who__item--go { color: var(--brand); font-weight: 700; text-decoration: none; }
+.who__note b { font-weight: 700; color: var(--ink-2); }
+
+.signin { max-width: 440px; margin: var(--s7) auto; }
+.signin .card { padding: var(--s6); }
+.signin h1 { font-size: 28px; margin-bottom: var(--s2); }
+.signin label { display: block; font-size: 13px; font-weight: 700; color: var(--ink-2); margin: var(--s4) 0 6px; }
+.signin__row { display: flex; gap: var(--s2); }
+.signin input[type=tel], .signin input[type=text], .signin input.otp {
+  width: 100%; font: inherit; font-size: 18px; padding: 12px 14px; border-radius: var(--r-md);
+  border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.signin input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.signin .cc { flex: 0 0 84px; text-align: center; }
+.signin input.otp { letter-spacing: .5em; text-align: center; font-family: var(--mono); font-size: 24px; }
+.signin .btn { margin-top: var(--s5); width: 100%; }
+.signin__err { margin-top: var(--s3); color: var(--bad); font-size: 14px; min-height: 1.4em; }
+.signin__check { display: flex !important; gap: 10px; align-items: flex-start; font-weight: 600 !important;
+  font-size: 14px !important; color: var(--ink) !important; line-height: 1.45; }
+.signin__check input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.signin__fine { margin-top: var(--s4); font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+
+/* ---------- RAS PRACTISE DRILLS ---------- */
+.rascard { border-left: 3px solid var(--line-strong); }
+.rascard--reasoning { --accent: var(--reason); border-left-color: var(--reason); }
+.rascard--quants { --accent: var(--quant); border-left-color: var(--quant); }
+.rascard .chap__num { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.rascard__papers { margin-top: var(--s3); font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }

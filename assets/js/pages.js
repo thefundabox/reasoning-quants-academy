@@ -86,7 +86,7 @@ export async function practicePage(academyId, unitN, { drill = false } = {}) {
      for a specific tier in the URL. Deriving beats asking: a novice does not yet
      know which tier they belong in, and that is exactly who tiers are for. */
   const asked = q.get('tier');
-  const chosen = asked ? +asked : tierFor(academyId, unitN).tier;
+  const chosen = asked ? +asked : tierFor(academyId, unitN).tier;   // the drill floors this at Exam
 
   const { session, unit, academy, reason } = drill
     ? makeDrillSession(academyId, unitN, size, undefined, chosen)
@@ -129,5 +129,86 @@ export async function reteachPage(conceptId) {
   }
   if (where) document.body.classList.add(where.academy.theme);
   document.title = `Re-teach · ${label} · ${CONFIG.identity.name}`;
+  runLesson(session);
+}
+
+/* ---------------- RAS Practise Drills ---------------- */
+
+/** The tab itself: every topic, what it rehearses, and where it came from. */
+export async function rasIndexPage() {
+  const { RAS_TOPICS, rasGeneratorsFor, RAS_GENERATORS } = await import('./ras/index.js');
+  const { topbar, crumbs, wireLearnerChip, $ } = await import('./shell.js');
+  const { rasTopicPath } = await import('./routes.js');
+  document.body.classList.add('theme-brand');
+  document.title = `RAS Practise Drills · ${CONFIG.identity.name}`;
+  if (!CONFIG.features.rasDrills) {
+    return dead('Not part of this course', 'The RAS drills have been switched off in this copy of the site.');
+  }
+
+  const card = t => `
+    <a class="chapcard rascard rascard--${t.side}" href="${href(rasTopicPath(t.id))}">
+      <span class="chapcard__top">
+        <span class="chap__num">${t.side === 'reasoning' ? '◑' : '∑'}</span>
+        <span class="chap__count">${rasGeneratorsFor(t.id).length} question type${rasGeneratorsFor(t.id).length > 1 ? 's' : ''}</span>
+      </span>
+      <b class="chapcard__title">${t.name}</b>
+      <em class="chapcard__sub">${t.blurb}</em>
+      <span class="rascard__papers">Set in ${t.papers}</span>
+      <span class="chapcard__go">Start drilling <span class="arw">→</span></span>
+    </a>`;
+
+  $('#app').innerHTML = `
+    ${topbar({ tab: 'ras' })}
+    <div class="wrap">
+      ${crumbs([{ label: 'Home', href: href('') }, { label: 'RAS Practise Drills' }])}
+      <header class="hero">
+        <p class="eyebrow hero__kicker">Modelled on RAS Prelims 2015 · 2016 · 2018 · 2021 · 2023 · 2024</p>
+        <h1>The paper's own questions, in fresh numbers.</h1>
+        <p class="lede">Every archetype here has been set by the RPSC — the invented language, the CI−SI gap,
+          the round table where "right" is anticlockwise, the pie chart with one value given. The numbers,
+          names and figures change on every reload; the shape does not.
+          <b>These are harder than the chapter drills</b>, which teach one idea at a time. Nothing here is a warm-up.</p>
+        <div class="row" style="margin-top:var(--s5);flex-wrap:wrap;gap:var(--s3)">
+          <a class="btn btn--lg" href="${href(rasTopicPath('mixed'))}">Sit a mixed set of 15</a>
+          <span class="muted" style="font-size:14px;align-self:center">${RAS_GENERATORS.length} question types across
+            ${RAS_TOPICS.length} topics — over 20,000 distinct questions.</span>
+        </div>
+      </header>
+
+      <h2 class="section-h">Reasoning &amp; mental ability</h2>
+      <div class="chapgrid">${RAS_TOPICS.filter(t => t.side === 'reasoning').map(card).join('')}</div>
+
+      <h2 class="section-h">Basic numeracy</h2>
+      <div class="chapgrid">${RAS_TOPICS.filter(t => t.side === 'quants').map(card).join('')}</div>
+
+      <footer class="foot">
+        <p style="font-size:13px;max-width:78ch">Answers here feed the same ladder as the rest of the site:
+          a question you get wrong comes back in your review queue, and its chapter is where the
+          re-teach will send you. The chapter drills remain exactly as they were — they are for learning
+          an idea; this is for sitting the paper.</p>
+        <a href="${href('')}">← Home</a>
+      </footer>
+    </div>`;
+  wireLearnerChip($('#app'));
+}
+
+/** One topic, dealt endlessly. */
+export async function rasTopicPage(topicId) {
+  const { rasSession, rasTopic } = await import('./ras/index.js');
+  const { rasPath } = await import('./routes.js');
+  document.body.classList.add('theme-brand');
+  if (!CONFIG.features.rasDrills) {
+    return dead('Not part of this course', 'The RAS drills have been switched off in this copy of the site.');
+  }
+  const q = new URLSearchParams(location.search);
+  const size = Math.min(25, Math.max(5, +q.get('n') || (topicId === 'mixed' ? 15 : 10)));
+  const tier = q.get('tier') ? +q.get('tier') : 2;
+  waiting('Setting your paper…');
+  const { session, topic, reason } = rasSession(topicId, { size, tier, backHref: href(rasPath()) });
+  if (!session) {
+    return dead('No such drill', `That link points at a set this bank does not have${reason ? ` (${reason})` : ''}.`,
+      href(rasPath()), 'See the RAS drills');
+  }
+  document.title = `${topic.name} · RAS Practise Drills · ${CONFIG.identity.name}`;
   runLesson(session);
 }

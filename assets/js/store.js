@@ -170,6 +170,9 @@ function load() {
 const hasWindow = typeof window !== 'undefined';
 
 function save() {
+  /* When this copy was last written. Only the cloud merge reads it, to decide
+     settings the learner CHOSE (not earned) — see merge.js. */
+  state.updated = Date.now();
   try { localStorage.setItem(keyFor(registry.active), JSON.stringify(state)); }
   catch { /* private mode, or Node */ }
   if (hasWindow) window.dispatchEvent(new CustomEvent('rqa:progress', { detail: state }));
@@ -393,6 +396,71 @@ export function bestMock() {
 
 export function setDailyGoal(xp) { state.dailyGoal = Math.max(10, Math.round(xp)); save(); }
 
+/* ============================================================
+   Accounts — a profile signed in with a mobile number.
+
+   A profile may carry `account: { uid, phone }`. That makes it the local copy
+   of a record kept in the cloud (see cloud.js); everything above still reads
+   and writes only this copy, so the site works identically offline and the
+   store never waits on a network.
+   ============================================================ */
+
+/** The local profile holding this account's copy, if this device has one. */
+export const accountProfile = uid =>
+  registry.list.find(p => p.account && p.account.uid === uid) || null;
+
+/** Mark a profile as this account's copy. */
+export function linkProfile(id, account) {
+  if (!registry.list.some(p => p.id === id) || !account || !account.uid) return false;
+  registry = { ...registry, list: registry.list.map(p => {
+    if (p.id === id) return { ...p, account: { uid: String(account.uid), phone: String(account.phone || '') } };
+    /* One device copy per account — a second would drift from the first. */
+    if (p.account && p.account.uid === account.uid) { const { account: _, ...rest } = p; return rest; }
+    return p;
+  }) };
+  writeJSON(PROFILES_KEY, registry);
+  return true;
+}
+
+/** A new profile for an account signing in on this device for the first time. */
+export function addAccountProfile(name, account) {
+  const p = addProfile(name);
+  linkProfile(p.id, account);
+  return activeProfile();
+}
+
+/**
+ * Replace the ACTIVE record wholesale — used only to install a merged copy.
+ * Anything that is not a v1 record is refused, so a bad download cannot blank
+ * a learner's progress.
+ */
+export function adopt(record) {
+  if (!record || typeof record !== 'object' || record.v !== 1) return false;
+  state = record;
+  save();
+  return true;
+}
+
+/**
+ * Signing out on a shared device should not leave that learner's record behind
+ * for the next person — it is safe in the cloud. The profile goes; if it is the
+ * only one, it is emptied and unlinked instead, since one profile must remain.
+ */
+export function forgetAccount(uid) {
+  const p = accountProfile(uid);
+  if (!p) return false;
+  if (registry.list.length > 1) return deleteProfile(p.id);
+  registry = { ...registry, list: registry.list.map(x => {
+    if (x.id !== p.id) return x;
+    const { account: _, ...rest } = x;
+    return { ...rest, name: 'Learner 1' };
+  }) };
+  writeJSON(PROFILES_KEY, registry);
+  state = FRESH();
+  save();
+  return true;
+}
+
 /** Clears the ACTIVE profile only — the others are somebody else's work. */
 export function reset() { state = FRESH(); save(); }
 
@@ -400,6 +468,10 @@ export function reset() { state = FRESH(); save(); }
    different profiles, so only this profile's key is worth reacting to; a change
    to the registry means another tab switched learner, and this one re-reads. */
 if (hasWindow) {
+  /* Only when a cloud is configured, and never under Node. The import is lazy
+     so a site without one downloads none of it. */
+  if (CONFIG.cloud.enabled) import('./cloud.js').then(m => m.start()).catch(() => { /* offline: stay local */ });
+
   window.addEventListener('storage', e => {
     if (e.key === PROFILES_KEY) registry = readProfiles();
     else if (e.key !== keyFor(registry.active)) return;

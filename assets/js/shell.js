@@ -10,7 +10,8 @@ import { nextSteps, badgeShelf } from './progress.js';
 import { CONFIG } from './config.js';
 import { SECONDS_PER_QUESTION } from './mock.js';
 import { href, chapterPath, lessonPath, practicePath, drillPath, reteachPath,
-         academyPath, TABS } from './routes.js';
+         academyPath, loginPath, TABS } from './routes.js';
+import { maskPhone, cloudStatus } from './cloud.js';
 
 /* Two explicit fields, not one clever split — see the note in config.js. */
 const MARK_MAIN = CONFIG.identity.short;
@@ -41,18 +42,21 @@ export function ring(pct, label = '') {
 }
 
 /* ---------- learner switcher ---------- */
-/* These are local profiles, not accounts — see the note in store.js. The menu
-   says so plainly rather than dressing itself up as a sign-in. */
+/* Local profiles are not accounts — see the note in store.js — and the menu
+   says so plainly. A profile signed in with a mobile number IS an account's
+   copy (cloud.js), and the menu says that plainly too. */
 const initials = name => name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export function learnerChip() {
   const me = store.activeProfile();
   const list = store.profiles();
+  const cloud = CONFIG.cloud.enabled;
+  const mine = !!me.account;
   return `<div class="who" id="who">
     <button class="who__btn" type="button" id="whoBtn" aria-expanded="false" aria-haspopup="true"
             title="Switch learner — local to this device">
-      <span class="who__av">${esc(initials(me.name))}</span>
+      <span class="who__av">${esc(initials(me.name))}${mine ? '<i class="who__dot" aria-label="signed in"></i>' : ''}</span>
       <span class="who__name">${esc(me.name)}</span>
       <svg class="who__chev" viewBox="0 0 20 20" aria-hidden="true">
         <path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -63,20 +67,39 @@ export function learnerChip() {
       ${list.map(p => `
         <button class="who__item ${p.id === me.id ? 'is-on' : ''}" role="menuitem" data-switch="${p.id}">
           <span class="who__av who__av--sm">${esc(initials(p.name))}</span>
-          <span>${esc(p.name)}</span>
+          <span>${esc(p.name)}${p.account ? `<small class="who__phone">📱 ${esc(maskPhone(p.account.phone))}</small>` : ''}</span>
           ${p.id === me.id ? '<em>current</em>' : ''}
         </button>`).join('')}
       <div class="who__sep"></div>
       <button class="who__item" role="menuitem" data-add="1"><span class="who__plus">+</span> Add a learner</button>
       <button class="who__item" role="menuitem" data-rename="${me.id}"><span class="who__plus">✎</span> Rename ${esc(me.name)}</button>
-      ${list.length > 1
-        ? `<button class="who__item who__item--bad" role="menuitem" data-del="${me.id}">
-             <span class="who__plus">×</span> Remove ${esc(me.name)}</button>`
-        : ''}
-      <p class="who__note">Saved in this browser only. No password, no sync —
-        anyone using this device can pick any learner.</p>
+      ${cloud && !mine
+        ? `<a class="who__item who__item--go" role="menuitem" href="${href(loginPath())}">
+             <span class="who__plus">📱</span> Sign in with mobile to save across devices</a>` : ''}
+      ${mine
+        ? `<button class="who__item who__item--bad" role="menuitem" data-signout="1">
+             <span class="who__plus">⎋</span> Sign out of ${esc(me.name)}</button>`
+        : list.length > 1
+          ? `<button class="who__item who__item--bad" role="menuitem" data-del="${me.id}">
+               <span class="who__plus">×</span> Remove ${esc(me.name)}</button>`
+          : ''}
+      <p class="who__note" id="whoNote">${mine
+        ? `Signed in as ${esc(maskPhone(me.account.phone))}. <b id="whoSync">${syncLabel(cloudStatus())}</b>`
+        : cloud
+          ? `${esc(me.name)} is saved in this browser only. Sign in with your mobile number to keep it
+             on every device.`
+          : `Saved in this browser only. No password, no sync —
+             anyone using this device can pick any learner.`}</p>
     </div>
   </div>`;
+}
+
+function syncLabel(s) {
+  return ({
+    syncing: 'Saving…', synced: 'Progress saved to your account.', offline: 'Offline — will save when you reconnect.',
+    error: 'Could not reach your account; saved on this device for now.', paused: 'Not syncing — another learner is in use.',
+    'signed-out': 'Signed out on this device.',
+  })[s] || 'Connecting…';
 }
 
 /** Wire the switcher. Safe to call on any page; does nothing if the chip is absent. */
@@ -84,6 +107,10 @@ export function wireLearnerChip(root = document) {
   const who = root.querySelector('#who');
   if (!who) return;
   const btn = who.querySelector('#whoBtn');
+  window.addEventListener('rqa:cloud', e => {
+    const el = who.querySelector('#whoSync');
+    if (el) el.textContent = syncLabel(e.detail);
+  });
 
   const close = () => { who.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); };
   btn.onclick = e => {
@@ -96,7 +123,7 @@ export function wireLearnerChip(root = document) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   who.querySelector('#whoMenu').addEventListener('click', e => {
-    const el = e.target.closest('[data-switch],[data-add],[data-rename],[data-del]');
+    const el = e.target.closest('[data-switch],[data-add],[data-rename],[data-del],[data-signout]');
     if (!el) return;
     const d = el.dataset;
 
@@ -111,8 +138,20 @@ export function wireLearnerChip(root = document) {
     if (d.rename) {
       const name = prompt('Rename this learner to?', store.activeProfile().name);
       if (name === null) return close();
+      if (store.activeProfile().account && CONFIG.cloud.enabled) {
+        /* An account's name lives in the cloud too, or the next sync puts the old one back. */
+        import('./cloud.js').then(m => m.rename(name)).finally(() => location.reload());
+        return;
+      }
       store.renameProfile(d.rename, name);
       location.reload();
+      return;
+    }
+    if (d.signout) {
+      const me = store.activeProfile();
+      if (!confirm(`Sign out ${me.name}? Their progress stays safe in their account and comes back when they sign in again — it is removed from this device only.`)) return close();
+      import('./cloud.js').then(m => m.signOutHere()).then(() => location.reload(),
+        () => alert('Could not sign out — check your connection and try again.'));
       return;
     }
     if (d.del) {

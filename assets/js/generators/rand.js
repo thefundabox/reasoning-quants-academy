@@ -147,13 +147,13 @@ export const clampTier = t => {
  * middle at their level, and close with one that stretches. At tier 1 there
  * is nothing below, so the warm-up is skipped rather than faked.
  */
-export function tierRamp(tier, n) {
+export function tierRamp(tier, n, { warmUp = true } = {}) {
   const t = clampTier(tier);
   const out = [];
   for (let i = 0; i < n; i++) {
     const last = i === n - 1;
-    if (i === 0 && t > 1 && n >= 3) out.push(t - 1);        // warm-up
-    else if (last && t < 3 && n >= 3) out.push(t + 1);      // one stretch
+    if (warmUp && i === 0 && t > 1 && n >= 3) out.push(t - 1);   // warm-up
+    else if (last && t < 3 && n >= 3) out.push(t + 1);           // one stretch
     else out.push(t);
   }
   return out;

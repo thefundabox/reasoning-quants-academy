@@ -5090,7 +5090,7 @@ async function pagesSuite() {
 
 kinship().then(compass).then(arrangements).then(codes).then(logic).then(visual)
   .then(foundations).then(quants2).then(quants1).then(quants3).then(quants5).then(quants4).then(quants6).then(quants7).then(guards).then(review)
-  .then(generators).then(answerSpread).then(tiersSuite).then(achievementsSuite).then(familyTreeIdentity).then(practice).then(profilesSuite).then(reteachSuite).then(whyOptionSuite).then(setsSuite).then(mockSuite).then(configSuite).then(packageSuite).then(pagesSuite).then(() => {
+  .then(generators).then(answerSpread).then(tiersSuite).then(achievementsSuite).then(familyTreeIdentity).then(practice).then(profilesSuite).then(reteachSuite).then(whyOptionSuite).then(setsSuite).then(mockSuite).then(configSuite).then(packageSuite).then(pagesSuite).then(() => require('./cloud-suite.js')(check)).then(() => require('./ras-suite.js')(check)).then(() => {
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nAll checks passed.');
   process.exit(failures ? 1 : 0);
 });

@@ -62,6 +62,13 @@ export function lessonPath(lessonId) {
 
 export const reteachPath = conceptId => `reteach/${slug(conceptId)}/`;
 
+/* The RAS bank. Its own tab, its own pages, and deliberately no overlap with
+   the chapter drills — see assets/js/ras/index.js. */
+export const rasPath = () => 'ras-drills/';
+export const rasTopicPath = id => `ras-drills/${slug(id)}/`;
+
+export const loginPath = () => 'login/';
+
 /* The pages that are not about any one chapter — the site's tabs. */
 export const TABS = [
   { id: 'home',      label: 'Home',      path: '' },
@@ -69,6 +76,7 @@ export const TABS = [
   { id: 'quants',    label: 'Quants',    path: 'quants/' },
   { id: 'review',    label: 'Review',    path: 'review/',   feature: 'review' },
   { id: 'mock',      label: 'Mock test', path: 'mock/',     feature: 'mock' },
+  { id: 'ras',       label: 'RAS Practise Drills', path: 'ras-drills/', feature: 'rasDrills' },
   { id: 'progress',  label: 'Progress',  path: 'progress/' },
   { id: 'modules',   label: 'Tools',     path: 'modules/',  feature: 'modules' },
 ];
@@ -94,6 +102,7 @@ export function resolve(address) {
   const tab = TABS.find(t => t.path === p);
   if (tab) return { kind: ACADEMIES[tab.id] ? 'academy' : 'tab', id: tab.id, academyId: ACADEMIES[tab.id] ? tab.id : undefined };
   if (seg[0] === 'reteach' && seg.length === 2) return { kind: 'reteach', conceptId: seg[1] };
+  if (seg[0] === 'ras-drills' && seg.length === 2) return { kind: 'ras', topicId: seg[1] };
 
   const a = ACADEMIES[seg[0]];
   if (!a || seg.length < 2) return null;

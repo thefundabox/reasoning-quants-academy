@@ -675,6 +675,7 @@ export class MockPaper {
 }
 
 export function runMock(paper, selector = '#app', opts = {}) {
+  document.documentElement.dataset.session = '1';   // see runLesson
   document.title = `Mock paper · ${paper.questions.length} questions`;
   return new MockPaper(paper, document.querySelector(selector), opts);
 }

@@ -109,11 +109,15 @@ function deal(gens, n, seed, tierAt, distinct = false, want = null) {
   return out;
 }
 
-/** Deal `n` questions for a chapter. */
-export function drill(academyId, unitN, n = 8, seed = 1, tier = 2) {
-  /* The tier is the RAMP's, not the caller's: a set opens one step below
-     the learner's level and closes one above it. See tierRamp. */
-  const ramp = tierRamp(tier, n);
+/**
+ * Deal `n` questions for a chapter.
+ *
+ * `warmUp` opens the set one step below the learner's level. That is right for
+ * a practice set and wrong for the endless drill, which is there to be hard:
+ * see DRILL_FLOOR in review.js.
+ */
+export function drill(academyId, unitN, n = 8, seed = 1, tier = 2, warmUp = true) {
+  const ramp = tierRamp(tier, n, { warmUp });
   return deal(generatorsFor(academyId, unitN), n, seed, k => ramp[k] ?? clampTier(tier));
 }
 

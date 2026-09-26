@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Reasoning &amp; Quants Academy</title>
+<meta name="description" content="Sign in with your mobile number so your progress is saved to your account and follows you to any device.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../assets/css/core.css">
+</head>
+<body class="theme-brand">
+<div id="app"></div>
+<script type="module">
+import * as store from '../assets/js/store.js';
+import { topbar, wireLearnerChip, $ } from '../assets/js/shell.js';
+import { CONFIG, applyTheme } from '../assets/js/config.js';
+import { href } from '../assets/js/routes.js';
+import * as cloud from '../assets/js/cloud.js';
+
+applyTheme();
+document.title = `Sign in · ${CONFIG.identity.name}`;
+const app = $('#app');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* Where to go afterwards: only ever a page on this site. */
+const next = (() => {
+  const n = new URLSearchParams(location.search).get('next') || '';
+  try { const u = new URL(n, href('')); return u.href.startsWith(href('')) ? u.href : href(''); }
+  catch { return href(''); }
+})();
+
+function frame(inner) {
+  app.innerHTML = `${topbar({})}<div class="wrap"><div class="signin">${inner}</div></div>`;
+  wireLearnerChip(app);
+}
+
+/* ---- the site has no cloud configured ---- */
+if (!CONFIG.cloud.enabled) {
+  frame(`<div class="card">
+    <p class="eyebrow">Mobile sign-in</p>
+    <h1>Not set up on this site yet</h1>
+    <p class="lede" style="font-size:15.5px">Your progress is saved in this browser.
+      ${CONFIG.cloud.requested
+        ? 'Sign-in has been switched on, but the Firebase settings in <code>assets/js/config.js</code> are incomplete.'
+        : 'To let learners sign in with their mobile number, the site owner turns on <code>cloud</code> in <code>assets/js/config.js</code> — README.md, <em>Mobile login</em>, has the steps.'}</p>
+    <a class="btn btn--ghost" href="${href('')}">Back to the academy</a>
+  </div>`);
+} else {
+  frame(`<div class="card"><p class="lede">Checking whether you are signed in…</p></div>`);
+  cloud.currentUser().then(u => (u && store.accountProfile(u.uid) ? signedIn(u) : askPhone()),
+    () => frame(`<div class="card"><h1>Cannot reach sign-in</h1>
+      <p class="lede" style="font-size:15.5px">Check your internet connection and reload. Your progress is still saved on this device.</p></div>`));
+}
+
+function signedIn(u) {
+  const me = store.accountProfile(u.uid);
+  frame(`<div class="card">
+    <p class="eyebrow">Signed in</p>
+    <h1>${esc(me.name)}</h1>
+    <p class="lede" style="font-size:15.5px">📱 ${esc(cloud.maskPhone(u.phoneNumber))}<br>
+      Your progress is saved to your account. Sign in with this number on any other phone or
+      computer and it will be there.</p>
+    <a class="btn" href="${next}">Continue learning</a>
+    <button class="btn btn--quiet" id="out" style="margin-top:var(--s2)">Sign out of this device</button>
+  </div>`);
+  $('#out').onclick = async () => {
+    if (!confirm('Sign out? Your progress stays in your account and is removed from this device only.')) return;
+    await cloud.signOutHere();
+    location.reload();
+  };
+}
+
+function askPhone(error = '') {
+  const cur = store.activeProfile();
+  /* Offer to fold this browser's progress into the account only when there is
+     some, and only when it is not already another account's copy. Unticked by
+     default when several learners share this browser — the progress in use
+     may well be somebody else's. */
+  const st = store.get();
+  const hasLocal = !cur.account && (st.xp > 0 || Object.keys(st.lessons).length > 0);
+  const shared = store.profiles().length > 1;
+  frame(`<form class="card" id="f" novalidate>
+    <p class="eyebrow">Sign in or create your account</p>
+    <h1>Your mobile number</h1>
+    <p class="lede" style="font-size:15px">We send a 6-digit code by SMS. No password to remember —
+      and your progress follows you to any device.</p>
+    <label for="phone">Mobile number</label>
+    <div class="signin__row">
+      <input class="cc" type="text" id="cc" value="${esc(CONFIG.cloud.countryCode)}" aria-label="Country code" inputmode="tel">
+      <input type="tel" id="phone" autocomplete="tel-national" inputmode="numeric" placeholder="98765 43210" required>
+    </div>
+    ${hasLocal ? `<label class="signin__check"><input type="checkbox" id="bring" ${shared ? '' : 'checked'}>
+      <span>Keep the progress <b>${esc(cur.name)}</b> has made in this browser (${st.xp} XP) and add it to this account.
+      ${shared ? 'Leave unticked if that is not you.' : ''}</span></label>` : ''}
+    <button class="btn btn--lg" id="send" type="submit">Send code</button>
+    <p class="signin__err" id="err" role="alert">${esc(error)}</p>
+    <p class="signin__fine">Standard SMS rates may apply. Your number is used only to sign you in.
+      Signing in is optional — without it, progress stays in this browser.</p>
+  </form>`);
+  const f = $('#f');
+  $('#phone').focus();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const phone = cloud.normalisePhone($('#phone').value, $('#cc').value.trim() || CONFIG.cloud.countryCode);
+    if (!phone) { $('#err').textContent = 'Enter your mobile number — digits only.'; return; }
+    const bring = !!$('#bring')?.checked;
+    const btn = $('#send');
+    btn.disabled = true; btn.textContent = 'Sending…'; $('#err').textContent = '';
+    try {
+      const confirmation = await cloud.sendCode(phone, btn);
+      askCode(phone, confirmation, bring);
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Send code';
+      $('#err').textContent = cloud.explain(err);
+    }
+  };
+}
+
+function askCode(phone, confirmation, bring) {
+  frame(`<form class="card" id="f" novalidate>
+    <p class="eyebrow">Check your messages</p>
+    <h1>Enter the code</h1>
+    <p class="lede" style="font-size:15px">Sent to <b>${esc(phone)}</b>.
+      <a href="#" id="change">Wrong number?</a></p>
+    <label for="code">6-digit code</label>
+    <input class="otp" type="text" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\\d{6}" required>
+    <button class="btn btn--lg" id="go" type="submit">Verify and sign in</button>
+    <p class="signin__err" id="err" role="alert"></p>
+  </form>`);
+  $('#code').focus();
+  $('#change').onclick = e => { e.preventDefault(); askPhone(); };
+  $('#code').oninput = e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); if (e.target.value.length === 6) $('#f').requestSubmit(); };
+  $('#f').onsubmit = async e => {
+    e.preventDefault();
+    const code = $('#code').value;
+    if (!/^\d{6}$/.test(code)) { $('#err').textContent = 'The code is 6 digits.'; return; }
+    const go = $('#go');
+    go.disabled = true; go.textContent = 'Signing in…'; $('#err').textContent = '';
+    try {
+      const { user, isNew } = await cloud.verifyCode(confirmation, code, { bringLocal: bring });
+      if (isNew && !bring) return askName(user);
+      location.href = next;
+    } catch (err) {
+      go.disabled = false; go.textContent = 'Verify and sign in';
+      $('#err').textContent = cloud.explain(err);
+    }
+  };
+}
+
+function askName(user) {
+  frame(`<form class="card" id="f" novalidate>
+    <p class="eyebrow">Account created</p>
+    <h1>What should we call you?</h1>
+    <label for="name">Your name</label>
+    <input type="text" id="name" maxlength="24" autocomplete="given-name" required>
+    <button class="btn btn--lg" type="submit">Start learning</button>
+  </form>`);
+  $('#name').focus();
+  $('#f').onsubmit = async e => {
+    e.preventDefault();
+    const name = $('#name').value.trim();
+    if (name) await cloud.rename(name).catch(() => {});
+    location.href = next;
+  };
+}
+</script>
+</body>
+</html>

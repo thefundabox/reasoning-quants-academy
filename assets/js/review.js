@@ -302,7 +302,18 @@ export async function makeChapterSession(academyId, unitN, size = 8, seed = fres
  * from the lessons. This is the answer to "the chapter only has 18 questions":
  * a different seed every time means a different paper every time.
  */
-export function makeDrillSession(academyId, unitN, size = 10, seed = freshSeed(), tier = 2) {
+/* The endless drill never deals below EXAM difficulty.
+
+   It used to take the tier straight from the learner's record, and a record
+   with nothing in it derives Gentle — so a chapter nobody had drilled yet
+   opened on its smallest numbers and shortest chains, and stayed there until
+   six answers had been banked. Every learner's FIRST look at the drill was
+   therefore its easiest possible face, which is exactly the wrong way round
+   for the page whose whole purpose is exam pressure. Written practice still
+   starts gently; that is what it is for. */
+export const DRILL_FLOOR = 2;
+
+export function makeDrillSession(academyId, unitN, size = 10, seed = freshSeed(), tier = DRILL_FLOOR) {
   const academy = ACADEMIES[academyId];
   const unit = findUnit(academyId, unitN);
   if (!academy || !unit) return { session: null, questions: [], unit: null, academy: null, reason: 'no such chapter' };
@@ -313,11 +324,12 @@ export function makeDrillSession(academyId, unitN, size = 10, seed = freshSeed()
      is solving the stimulus ONCE and reading several answers off it. Only when
      the set is a reasonable share of the paper, so a six-question drill is not
      two-thirds one table. */
+  tier = Math.max(DRILL_FLOOR, clampTier(tier));
   const setGen = SET_GENERATORS.find(g => g.chapter === `${academyId}:${unitN}`);
   const setSteps = (setGen && size >= 6)
     ? (() => { try { return expandSet(setGen, rng(seed ^ 0x5eed), clampTier(tier), 0); } catch { return []; } })()
     : [];
-  const steps = [...setSteps, ...drill(academyId, unitN, Math.max(0, size - setSteps.length), seed, tier)]
+  const steps = [...setSteps, ...drill(academyId, unitN, Math.max(0, size - setSteps.length), seed, tier, false)]
     .slice(0, size)
     .map((st, i) => ({ ...st, phase: `Q${i + 1}` }));
   if (!steps.length) {
@@ -330,7 +342,7 @@ export function makeDrillSession(academyId, unitN, size = 10, seed = freshSeed()
     say: `These are built to order, not picked from a list — new numbers, new names, new
           arrangement every time you open this page. Reload it and you get a different paper.<br><br>
           Difficulty: <b>${TIER_NAME[clampTier(tier)]}</b> — ${TIER_BLURB[clampTier(tier)]}
-          The set opens a shade easier and closes a shade harder than that.<br><br>
+          The drill never goes below exam difficulty, and the last question is a shade harder still.<br><br>
           ${setSteps.length ? `It opens with a <b>shared-stimulus set</b>: ${setSteps.length}
             questions off one ${academyId === 'quants' ? 'table' : 'arrangement'}. Solve it once
             and read all ${setSteps.length} answers off it — that is what the paper is testing.<br><br>` : ''}

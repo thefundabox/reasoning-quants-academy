@@ -101,6 +101,7 @@ export const DEFAULTS = {
     achievements: true,  // badges + the shelf
     profiles: true,      // several learners on one browser
     modules: true,       // the eight original standalone tools
+    rasDrills: true,     // /ras-drills — questions modelled on the RPSC papers themselves
   },
 
   /* ---------- which content ----------
@@ -110,6 +111,30 @@ export const DEFAULTS = {
   content: {
     academies: { reasoning: true, quants: true },
     hideChapters: [],
+  },
+
+  /* ---------- sign in with a mobile number ----------
+     Off by default: progress then lives in the learner's browser only, and
+     the site needs nothing but a static host.
+
+     Turn it on and learners sign in with their mobile number and a one-time
+     SMS code, and their progress follows them to any device. It needs a free
+     Firebase project (Google's hosted auth + database) — README.md, "Mobile
+     login", walks through creating one in about ten minutes. Paste the web
+     app config Firebase shows you into `firebase` below.
+
+     These values are NOT secrets. Firebase's web config is meant to ship in
+     the page; what protects each learner's record is firestore.rules, which
+     lets a signed-in number read and write its own record and nothing else. */
+  cloud: {
+    enabled: false,
+    countryCode: '+91',      // pre-filled in the sign-in form
+    firebase: {
+      apiKey: '',
+      authDomain: '',
+      projectId: '',
+      appId: '',
+    },
   },
 };
 
@@ -159,6 +184,10 @@ export function resolve(raw = DEFAULTS) {
   const id = sec('identity'), gd = sec('guide'), th = sec('theme');
   const ex = sec('exam'), pr = sec('progress'), ft = sec('features'), ct = sec('content');
   const ac = ct.academies && typeof ct.academies === 'object' ? ct.academies : {};
+  const cl = sec('cloud');
+  const fb = cl.firebase && typeof cl.firebase === 'object' ? cl.firebase : {};
+  const fbStr = k => (typeof fb[k] === 'string' ? fb[k].trim().slice(0, 200) : '');
+  const firebase = { apiKey: fbStr('apiKey'), authDomain: fbStr('authDomain'), projectId: fbStr('projectId'), appId: fbStr('appId') };
 
   const questions = num(ex.questions, D.exam.questions, 10, 500);
   const minutes = num(ex.minutes, D.exam.minutes, 5, 600);
@@ -218,6 +247,17 @@ export function resolve(raw = DEFAULTS) {
       hideChapters: Array.isArray(ct.hideChapters)
         ? ct.hideChapters.filter(x => typeof x === 'string' && /^[a-z]+:\d+$/.test(x))
         : D.content.hideChapters,
+    },
+    cloud: {
+      /* On only when asked for AND usable. A switch flipped on with the
+         Firebase fields still blank would put a sign-in button on every page
+         that can only ever fail. */
+      enabled: bool(cl.enabled, D.cloud.enabled)
+        && !!(firebase.apiKey && firebase.authDomain && firebase.projectId && firebase.appId),
+      requested: bool(cl.enabled, D.cloud.enabled),
+      countryCode: typeof cl.countryCode === 'string' && /^\+\d{1,4}$/.test(cl.countryCode.trim())
+        ? cl.countryCode.trim() : D.cloud.countryCode,
+      firebase,
     },
   };
 }

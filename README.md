@@ -118,7 +118,10 @@ reasoning/ quants/      each academy's tab — its chapters, as cards
     compass-and-turns/            * a lesson
     practice/                     * that chapter's written questions
     drill/                        * that chapter's endless generated drill (?tier=1|2|3)
+ras-drills/             RAS Practise Drills tab — questions built on the real papers
+  codes/                          * one page per topic, plus mixed/
 review/                 Review tab — spaced-repetition set (?n=<size>)
+login/                  mobile sign-in (only when `cloud` is configured)
 mock/                   Mock test tab — timed, negatively marked (?n=10|25|50)
 progress/               Progress tab — dashboard and achievements
 reteach/<concept>/      * one idea taught again, then re-tested
@@ -135,6 +138,9 @@ assets/js/
   betaal.js             the guide: moods, dialogue, voice
   shell.js              topbar + section tabs, dashboard, academy and chapter pages
   routes.js             where every page lives — links and tools/pages.js both ask it
+  ras/                  the RAS Practise Drills bank — 41 generators, 12 topics
+  cloud.js              mobile sign-in and cross-device sync (off by default)
+  merge.js              merging two copies of one learner's record
   pages.js              what each generated page runs
   review.js             concept → the questions that TEST it
   reteach.js            concept → the lesson steps that TEACH it
@@ -150,6 +156,55 @@ tools/pages.js          write the per-chapter/lesson/tab pages (--check: are the
 tools/package.js        zip the whole site — dependency-free ZIP writer
 tools/verify-generators.js   regression harness for the modules/ generators
 ```
+
+## RAS Practise Drills
+
+A second, separate question bank, at `/ras-drills/`. Where the chapter drills teach one idea at a
+time, this bank rehearses **the paper**: every archetype in it is one the RPSC has actually set in
+RAS Prelims 2015, 2016, 2018, 2021, 2023 or 2024, and each generator names the question it was
+modelled on.
+
+- **41 generators across 12 topics** — over 20,000 distinct questions, every one with a worked
+  explanation and a named mistake behind each wrong option.
+- **Harder by design.** Its gentlest tier is an ordinary exam question; the chapter drills stay
+  where they were, because they are for learning an idea rather than sitting a paper.
+- **Kept apart.** `assets/js/ras/` imports nothing from `assets/js/generators/` except the shared
+  randomness helpers, and nothing imports it back — the harness checks that too.
+- Answers still feed the same Leitner ladder: each generator records against a concept its own
+  chapter teaches, so a RAS question you miss comes back in your review queue and its re-teach
+  goes to the lesson that taught it.
+
+Switch it off with `features.rasDrills` in `config.js`. Add a generator by writing it in the right
+`assets/js/ras/*.js`, exporting it from that file's array, and running the harness — `tools/ras-suite.js`
+re-derives the mechanical answers from the printed question, re-solves the seating puzzles from
+their own clues, and checks every topic can still deal at least a hundred different questions.
+
+## Mobile login (optional)
+
+Off by default: progress lives in the browser, and the site needs nothing but a static host.
+
+Turn it on and learners sign in with a mobile number and a one-time SMS code, and their progress
+follows them to any device. It needs a free Firebase project (Google's hosted authentication and
+database):
+
+1. Create a project at <https://console.firebase.google.com> → **Add project**.
+2. **Build → Authentication → Sign-in method → Phone → Enable.** SMS verification is a paid
+   Firebase feature on new projects; check the current pricing before you open it to the public,
+   and add test numbers under *Phone numbers for testing* while you are developing.
+3. **Authentication → Settings → Authorised domains:** add the domain you serve from
+   (`<user>.github.io`), and `localhost` for development.
+4. **Build → Firestore Database → Create database** (production mode). Open the **Rules** tab,
+   paste `firestore.rules` from this repository, and Publish. Those rules are what actually protect
+   a learner's record: a signed-in number may read and write its own document and nothing else.
+5. **Project settings → Your apps → Web app.** Copy the four values into `cloud.firebase` in
+   `assets/js/config.js` and set `cloud.enabled: true`.
+
+Those four values are not secrets — Firebase's web config is meant to ship in the page.
+
+How it behaves: the browser copy stays the working copy, so the site still works offline; every
+sync **merges** rather than overwrites (`assets/js/merge.js`), so two devices used apart both keep
+their answers; and signing out removes that learner's copy from the device while leaving it safe in
+their account.
 
 ## Adding a lesson
 

@@ -239,6 +239,7 @@ export class Lesson {
             <div><b>${ok ? 'Correct' : 'Not this time'}</b><p>${line}</p></div></div>
           ${picked ? `<p class="verdict__pick"><span>You chose ${s.options[choiceIdx]}</span>${picked}</p>` : ''}
           <div class="verdict__why">${ok ? (s.whyRight || s.why || '') : (s.whyWrong || s.why || '')}</div>
+          ${s.source ? `<p class="verdict__src">${s.source}</p>` : ''}
           ${s.figure ? `<figure class="verdict__fig">${s.figure}
             ${s.figureCap ? `<figcaption>${s.figureCap}</figcaption>` : ''}</figure>` : ''}
         </div>`;
@@ -380,6 +381,8 @@ export class Lesson {
 }
 
 export function runLesson(def, selector = '#app') {
+  /* Marks a page as mid-session, so a cloud sync never reloads it (cloud.js). */
+  document.documentElement.dataset.session = '1';
   const el = document.querySelector(selector);
   document.title = `${def.title} · Reasoning & Quants Academy`;
   return new Lesson(def, el);
