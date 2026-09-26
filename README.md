@@ -179,6 +179,19 @@ Switch it off with `features.rasDrills` in `config.js`. Add a generator by writi
 re-derives the mechanical answers from the printed question, re-solves the seating puzzles from
 their own clues, and checks every topic can still deal at least a hundred different questions.
 
+## The printed question is the question
+
+`tools/printed-suite.js` reads what the LEARNER reads — the rendered question text and figure —
+parses the numbers back out of it, and works the answer out again by a different route. It covers
+41 generators and re-derives about 10,000 questions per run, and it re-solves the seating and
+floors puzzles from their own printed clues by brute force.
+
+It exists because of a bug nothing else could see: `cnt-slots` drew four slots at Stretch while
+every scene could only name three, so the question printed three numbers and the key multiplied
+four. The question was well-formed, its options were distinct, its explanation agreed with itself —
+and its answer could not be reached from what was on the page. Any check written against the
+generator's own intent passes that; only a check that reads the printed text fails it.
+
 ## Mobile login (optional)
 
 Off by default: progress lives in the browser, and the site needs nothing but a static host.

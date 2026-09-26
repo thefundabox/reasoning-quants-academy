@@ -14,6 +14,10 @@ const averageShift = (R, tier) => {
   const newAvg = avg + change;
   const value = joins ? newAvg * (n + 1) - avg * n : avg * n - newAvg * (n - 1);
   if (value <= 0 || Math.round(value * 2) !== value * 2) return null;
+  /* Arithmetically fine, and nonsense as a question: a group of 19 whose
+     average rises 2.5 kg when somebody leaves says that person weighed 3 kg.
+     A quarter of the draws were like that. The numbers must describe people. */
+  if (value < 30 || value > 120) return null;
   const who = R.pick(NAMES);
   return ask({
     context: `The average weight of <b>${n} students</b> is <b>${avg} kg</b>.`,
@@ -30,7 +34,9 @@ const averageShift = (R, tier) => {
       Before: ${n} × ${avg} = <b>${round(avg * n, 1)} kg</b>.
       After: ${joins ? n + 1 : n - 1} × ${round(newAvg, 2)} = <b>${round(newAvg * (joins ? n + 1 : n - 1), 1)} kg</b>.<br>
       The difference is ${who}'s weight: <b>${round(value, 1)} kg</b>.`,
-    hardness: 1.6 + (joins ? 0 : 0.4),
+    /* Bigger groups and a half-kilogram shift are what the tier moves, so the
+       difficulty claim has to be made of those and not of a constant. */
+    hardness: 0.8 + n / 20 + (Math.abs(change) % 1 ? 0.5 : 0) + (joins ? 0 : 0.4),
     concept: 'centre-totals', conceptLabel: 'Averages move in totals',
     source: 'RAS staple — averages block',
   });

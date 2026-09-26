@@ -881,11 +881,18 @@ export const diTableGen = {
 
 /* ---------------- Unit 6 · Counting & Chance ---------------- */
 
+/* Every scene must name AS MANY slots as the hardest tier asks for. At tier 3
+   this generator can use four, and each scene listed only three: the question
+   then printed three slots while the answer multiplied four numbers, so the
+   answer the learner could reach was not among the options. Four names each,
+   and `k` is capped by the list length so a shorter scene can never drift. */
 const CNT_SCENES = [
-  { things: 'shirts', slots: ['shirt', 'trouser', 'tie'], who: 'Ravi' },
-  { things: 'dishes', slots: ['starter', 'main', 'dessert'], who: 'a diner' },
-  { things: 'routes', slots: ['bus', 'train', 'taxi'], who: 'a traveller' },
-  { things: 'letters', slots: ['first letter', 'second letter', 'third letter'], who: 'a code' },
+  { things: 'shirts', slots: ['shirt', 'trouser', 'tie', 'belt'], who: 'Ravi' },
+  { things: 'dishes', slots: ['starter', 'main', 'dessert', 'drink'], who: 'a diner' },
+  { things: 'routes', slots: ['bus', 'train', 'taxi', 'metro'], who: 'a traveller' },
+  { things: 'letters', slots: ['first letter', 'second letter', 'third letter', 'fourth letter'], who: 'a code' },
+  /* Three only: place values have to run to the units digit, and "thousands,
+     hundreds" with no units is not a number anybody writes. */
   { things: 'digits', slots: ['hundreds digit', 'tens digit', 'units digit'], who: 'a number' },
 ];
 
@@ -894,7 +901,7 @@ export const countMultiply = {
   concept: 'count-multiply', conceptLabel: 'Independent choices multiply',
   make(R, tier = 2) {
     const scene = R.pick(CNT_SCENES);
-    const k = byTier(tier, 2, 3, R.int(3, 4));
+    const k = Math.min(byTier(tier, 2, 3, R.int(3, 4)), scene.slots.length);
     const counts = Array.from({ length: k }, () => R.int(byTier(tier, 2, 3, 4), byTier(tier, 5, 7, 9)));
     const total = counts.reduce((a, b) => a * b, 1);
     const summed = counts.reduce((a, b) => a + b, 0);
