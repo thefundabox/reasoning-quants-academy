@@ -145,3 +145,85 @@ export const INTEREST_GENERATORS = [
   gen('ras-int-back', 'interest', 'quants:3', 'ci-amount-first', 'Growth, backwards', backwards),
   gen('ras-int-leave', 'interest', 'quants:3', 'work-rates-add', 'Work with early leavers', leaveEarly),
 ];
+
+/* ============================================================
+   Wider coverage — RAS 2023 Q97 (one principal split between two schemes),
+   RAS 2024 Q93 (a rate found from simple interest, then compounded more
+   often than once a year).
+   ============================================================ */
+
+/* Part of the money at compound interest, the rest at simple interest, and
+   only the DIFFERENCE given. Two schemes, one unknown. */
+const splitPrincipal = (R, tier) => {
+  const SPLITS = [[2, 3], [1, 2], [1, 3], [3, 4], [2, 5]];
+  const [num, den] = R.pick(SPLITS);
+  const rc = R.pick([10, 20, 5, 15]);                 // compound rate
+  const rs = R.pick([12, 15, 8, 18, 20]);             // simple rate
+  const years = 2;
+  const ciFactor = (num / den) * ((1 + rc / 100) ** years - 1);
+  const siFactor = (1 - num / den) * (rs * years / 100);
+  const gap = ciFactor - siFactor;
+  if (Math.abs(gap) < 0.01) return null;
+  const P = R.pick([8000, 10000, 12000, 16000, 20000, 24000]);
+  const diff = round(Math.abs(gap) * P, 2);
+  if (Math.round(diff) !== diff || diff < 50) return null;
+  const bigger = gap > 0 ? 'compound' : 'simple';
+  return ask({
+    context: `<b>${num}/${den}</b> of a sum is deposited at <b>compound interest of ${rc}% per annum</b>,
+      and the rest at <b>simple interest of ${rs}% per annum</b>.`,
+    q: `If the ${bigger} interest exceeds the other by <b>${rupees(diff)}</b> after ${years} years,
+      what is the total sum?`,
+    opts: options(rupees(P), [
+      { v: rupees(round(P * num / den, 2)), why: `That is the part at compound interest, not the whole sum.` },
+      { v: rupees(round(diff / (rs * years / 100), 2)), why: 'That treats the difference as simple interest on the whole sum.' },
+      { v: rupees(P * 2), why: '' },
+      { v: rupees(round(P / 2, 2)), why: '' },
+    ], i => rupees(P + 2000 * (i + 1))),
+    why: `Take the sum as P.<br>
+      Compound part: ${num}/${den} × P × ((1 + ${rc}/100)² − 1) = <b>${round(ciFactor, 4)}P</b>.<br>
+      Simple part: ${den - num}/${den} × P × ${rs} × 2/100 = <b>${round(siFactor, 4)}P</b>.<br>
+      The gap is ${round(Math.abs(gap), 4)}P = ${rupees(diff)}, so P = <b>${rupees(P)}</b>.`,
+    hardness: 2.8,
+    concept: 'ci-amount-first', conceptLabel: 'Two schemes, one sum',
+    source: 'Shape of RAS 2023, Q97',
+  });
+};
+
+/* A rate found from simple interest and then used with compounding more often
+   than yearly. Halving the rate and doubling the periods is the whole trick. */
+const compoundOften = (R, tier) => {
+  const P = R.pick([8000, 10000, 12000, 16000, 20000]);
+  const rate = R.pick([10, 12, 20, 8, 15]);
+  const siYears = R.pick([2, 3, 4]);
+  const si = P * rate * siYears / 100;
+  const per = byTier(tier, 'half-yearly', R.pick(['half-yearly', 'quarterly']), 'quarterly');
+  const k = per === 'half-yearly' ? 2 : 4;
+  const years = 2;
+  const amount = P * (1 + rate / (100 * k)) ** (k * years);
+  const ci = round(amount - P, 2);
+  const yearly = round(P * ((1 + rate / 100) ** years - 1), 2);
+  if (Math.round(ci * 100) !== ci * 100) return null;
+  return ask({
+    context: `The simple interest on <b>${rupees(P)}</b> for <b>${siYears} years</b> is <b>${rupees(si)}</b>.`,
+    q: `At the same rate, compounded <b>${per}</b>, what is the compound interest on the same sum
+      after <b>${years} years</b>?`,
+    opts: options(rupees(ci), [
+      { v: rupees(yearly), why: `That compounds once a year. Compounding ${per} means ${k} periods a year, each at ${rate}/${k} = ${rate / k}%.` },
+      { v: rupees(round(amount, 2)), why: 'That is the AMOUNT. The interest is what you add to the principal, so subtract it.' },
+      { v: rupees(round(P * rate * years / 100, 2)), why: 'That is simple interest for two years.' },
+      { v: rupees(round(ci * 2, 2)), why: '' },
+    ], i => rupees(round(ci + 100 * (i + 1), 2))),
+    why: `First the rate: ${rupees(si)} = ${rupees(P)} × r × ${siYears}/100 → r = <b>${rate}% per annum</b>.<br>
+      Compounded ${per} there are ${k} periods a year at ${rate / k}% each, so after ${years} years:
+      ${rupees(P)} × (1 + ${rate / k}/100)<sup>${k * years}</sup> = ${rupees(round(amount, 2))}.<br>
+      Interest = ${rupees(round(amount, 2))} − ${rupees(P)} = <b>${rupees(ci)}</b>.`,
+    hardness: 2.5 + (k === 4 ? 0.5 : 0),
+    concept: 'ci-periods', conceptLabel: 'Compounding more often',
+    source: 'Shape of RAS 2024, Q93',
+  });
+};
+
+INTEREST_GENERATORS.push(
+  gen('ras-int-split', 'interest', 'quants:3', 'ci-amount-first', 'Two schemes, one sum', splitPrincipal),
+  gen('ras-int-often', 'interest', 'quants:3', 'ci-periods', 'Compounding more often', compoundOften),
+);

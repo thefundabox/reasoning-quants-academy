@@ -129,3 +129,113 @@ export const PERCENT_GENERATORS = [
   gen('ras-pct-two', 'percent', 'quants:2', 'trade-two-articles', 'Equal gain and loss', twoArticles),
   gen('ras-pct-polygon', 'percent', 'quants:2', 'ratio-one-part', 'Ratio fixing a shape', polygonAngles),
 ];
+
+/* ============================================================
+   Wider coverage — RAS 2023 Q92 (a fraction used upside down),
+   RAS 2024 Q92 (a price cut buys more), RAS 2023 Q91 (a ratio that shifts
+   when the same amount is added to each share).
+   ============================================================ */
+
+/* Multiplying by a/b instead of b/a. The error is measured against what the
+   answer SHOULD have been, which is the half candidates get wrong. */
+const fractionFlip = (R, tier) => {
+  const PAIRS = [[3, 5], [2, 3], [4, 7], [5, 8], [3, 4], [5, 6], [2, 7]];
+  const [a, b] = R.pick(PAIRS);
+  /* correct = x·b/a, obtained = x·a/b; error = (b/a − a/b)/(b/a) = (b² − a²)/b² */
+  const err = round((b * b - a * a) / (b * b) * 100, 2);
+  return ask({
+    context: `A student had to multiply a number by <b>${b}/${a}</b>, but multiplied it by
+      <b>${a}/${b}</b> instead.`,
+    q: 'What is the percentage error in the result?',
+    opts: options(`${err}%`, [
+      { v: `${round((b * b - a * a) / (a * a) * 100, 2)}%`, why: `That measures the error against the WRONG answer. A percentage error is always measured against the correct value.` },
+      { v: `${round((b - a) / b * 100, 2)}%`, why: 'That compares the fractions themselves rather than the results they produce.' },
+      { v: `${round(a / b * 100, 2)}%`, why: '' },
+      { v: `${round(100 - err, 2)}%`, why: '' },
+    ], i => `${round(err + 4 * (i + 1), 2)}%`),
+    why: `Take the number as 1. It should have become ${b}/${a} = ${round(b / a, 4)};
+      it became ${a}/${b} = ${round(a / b, 4)}.<br>
+      Error = ${round(b / a - a / b, 4)}, measured against the correct ${round(b / a, 4)}:<br>
+      (${b}² − ${a}²)/${b}² = ${b * b - a * a}/${b * b} = <b>${err}%</b>.`,
+    hardness: 2.1,
+    concept: 'pct-reverse', conceptLabel: 'Error against the right value',
+    source: 'Shape of RAS 2023, Q92',
+  });
+};
+
+/* A price cut, and the extra quantity it buys. The reduced price falls out in
+   one line, which is why the paper likes it. */
+const priceCut = (R, tier) => {
+  const r = R.pick(byTier(tier, [10, 20, 25], [10, 20, 25, 15], [12.5, 15, 21]));
+  const reduced = R.pick(byTier(tier, [12, 15, 20], [15, 16, 20, 24], [24, 25, 30, 40]));
+  /* The quantity a shopper is told about is a number a shopper would say —
+     "10.5 kg more", never "10.42 kg more". So the clean numbers are the price
+     and the quantity, and the money is derived from them. */
+  const extra = R.pick([2, 2.5, 3, 4, 5, 6, 7.5, 10, 10.5, 12]);
+  const money = 100 * reduced * extra / r;
+  if (!Number.isInteger(money) || money % 10 !== 0 || money > 12000) return null;
+  const original = round(reduced / (1 - r / 100), 2);
+  if (Math.round(original * 100) !== original * 100) return null;
+  return ask({
+    context: `A reduction of <b>${r}%</b> in the price of rice lets a buyer get <b>${extra} kg more</b>
+      for <b>₹${money}</b>.`,
+    q: 'What is the reduced price per kg?',
+    opts: options(`₹${reduced}`, [
+      { v: `₹${original}`, why: 'That is the ORIGINAL price, before the cut.' },
+      { v: `₹${round(money / extra, 2)}`, why: 'That divides the money by the extra quantity alone, as though the buyer got nothing before.' },
+      { v: `₹${round(reduced * (1 - r / 100), 2)}`, why: 'That applies the cut twice.' },
+      { v: `₹${reduced + 5}`, why: '' },
+    ], i => `₹${round(reduced + 2 * (i + 1) + 1, 2)}`),
+    why: `The money is fixed, so the extra rice is bought with what the cut saved:
+      ${r}% of ₹${money} = <b>₹${round(money * r / 100, 2)}</b>.<br>
+      That saving buys the extra ${extra} kg at the NEW price, so the new price is
+      ₹${round(money * r / 100, 2)} ÷ ${extra} = <b>₹${reduced}</b> per kg.<br>
+      (The old price was ₹${reduced} ÷ ${round(1 - r / 100, 3)} = ₹${original}.)`,
+    hardness: 1.4 + (Number.isInteger(r) ? 0 : 0.8) + money / 6000 + (Number.isInteger(extra) ? 0 : 0.4),
+    concept: 'pct-reverse', conceptLabel: 'A cut, and what it buys',
+    source: 'Shape of RAS 2024, Q92',
+  });
+};
+
+/* The same amount added to each share changes the ratio — RAS 2023 Q91. */
+const ratioShift = (R, tier) => {
+  const PAIRS = [[[3, 4, 5], [5, 6, 7]], [[2, 3, 4], [4, 5, 6]], [[1, 2, 3], [3, 4, 5]], [[4, 5, 6], [6, 7, 8]]];
+  const [before, after] = R.pick(PAIRS);
+  const add = R.pick([1000, 2000, 4000, 5000, 3000]);
+  /* (b0·k + c)/(b2·k + c) = a0/a2 … solve for k from the first and last shares. */
+  const k = (add * (after[0] - after[2]) ) / (after[2] * before[0] - after[0] * before[2]);
+  if (!Number.isFinite(k) || k <= 0 || Math.round(k) !== k) return null;
+  const shares = before.map(x => x * k);
+  const check = shares.map(x => x + add);
+  const ok = check[0] * after[1] === check[1] * after[0] && check[1] * after[2] === check[2] * after[1];
+  if (!ok) return null;
+  const who = ['A', 'B', 'C'];
+  const idx = R.int(0, 2);
+  return ask({
+    context: `Three students A, B and C receive prize money in the ratio <b>${before.join(' : ')}</b>.
+      The principal then gives <b>₹${add.toLocaleString('en-IN')}</b> more to each of them, after which
+      their amounts are in the ratio <b>${after.join(' : ')}</b>.`,
+    q: `How much did <b>${who[idx]}</b> receive originally?`,
+    opts: options(`₹${shares[idx].toLocaleString('en-IN')}`, [
+      { v: `₹${check[idx].toLocaleString('en-IN')}`, why: 'That is the amount AFTER the extra money was added.' },
+      { v: `₹${shares[(idx + 1) % 3].toLocaleString('en-IN')}`, why: `That is ${who[(idx + 1) % 3]}'s original share.` },
+      { v: `₹${(shares[idx] + add / 2).toLocaleString('en-IN')}`, why: '' },
+      { v: `₹${(before[idx] * add).toLocaleString('en-IN')}`, why: '' },
+    ], i => `₹${(shares[idx] + add * (i + 1)).toLocaleString('en-IN')}`),
+    why: `Let the shares be ${before.map(x => `${x}k`).join(', ')}. After ₹${add.toLocaleString('en-IN')} each they are
+      ${before.map(x => `${x}k + ${add}`).join(', ')}, and those are in the ratio ${after.join(' : ')}.<br>
+      Taking the first and the last: (${before[0]}k + ${add}) × ${after[2]} = (${before[2]}k + ${add}) × ${after[0]}
+      → k = <b>${k.toLocaleString('en-IN')}</b>.<br>
+      So the original shares were ${shares.map(x => `₹${x.toLocaleString('en-IN')}`).join(', ')}, and
+      ${who[idx]} received <b>₹${shares[idx].toLocaleString('en-IN')}</b>.`,
+    hardness: 2.5,
+    concept: 'ratio-difference', conceptLabel: 'A ratio that shifts',
+    source: 'Shape of RAS 2023, Q91',
+  });
+};
+
+PERCENT_GENERATORS.push(
+  gen('ras-pct-flip', 'percent', 'quants:2', 'pct-reverse', 'Fractions used upside down', fractionFlip),
+  gen('ras-pct-cut', 'percent', 'quants:2', 'pct-reverse', 'A cut, and what it buys', priceCut),
+  gen('ras-pct-shift', 'percent', 'quants:2', 'ratio-difference', 'Ratios that shift', ratioShift),
+);

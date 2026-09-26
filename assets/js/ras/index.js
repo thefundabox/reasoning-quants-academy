@@ -27,12 +27,16 @@ import { CLOCK_GENERATORS } from './clocks.js';
 import { NUMBER_GENERATORS } from './numbers.js';
 import { COUNTING_GENERATORS } from './counting.js';
 import { MEASURE_GENERATORS } from './measure.js';
+import { SPATIAL_GENERATORS } from './spatial.js';
+import { SET_GENERATORS_RAS } from './sets.js';
+import { STAT_GENERATORS } from './stats.js';
+import { GEOMETRY_GENERATORS } from './geometry.js';
 
 export const RAS_GENERATORS = [
   ...VERBAL_GENERATORS, ...CODE_GENERATORS, ...RELATION_GENERATORS, ...ARRANGE_GENERATORS,
-  ...FIGURE_GENERATORS, ...CLOCK_GENERATORS,
+  ...FIGURE_GENERATORS, ...CLOCK_GENERATORS, ...SPATIAL_GENERATORS, ...SET_GENERATORS_RAS,
   ...NUMBER_GENERATORS, ...MIXTURE_GENERATORS, ...PERCENT_GENERATORS, ...INTEREST_GENERATORS,
-  ...COUNTING_GENERATORS, ...MEASURE_GENERATORS,
+  ...COUNTING_GENERATORS, ...MEASURE_GENERATORS, ...STAT_GENERATORS, ...GEOMETRY_GENERATORS,
 ];
 
 /* The topics a learner picks from. `side` decides which half of the paper it
@@ -42,38 +46,42 @@ export const RAS_TOPICS = [
     blurb: 'Assumptions, arguments, courses of action, and conclusions that must be tested by drawing.',
     papers: '2015 Q112 · 2016 Q101-104 · 2018 Q102-105 · 2021 Q121-126' },
   { id: 'codes', side: 'reasoning', name: 'Coding & Series',
-    blurb: 'Invented languages, shifted alphabets, three-letter series, repeating blocks and made-up operators.',
-    papers: '2015 Q94, Q107, Q108 · 2016 Q109 · 2018 Q107-110 · 2021 Q124' },
+    blurb: 'Invented languages, shifted and rearranged alphabets, number series, three-letter series, repeating blocks, made-up operators and odd-one-out.',
+    papers: '2015 Q94, Q100, Q107, Q108 · 2016 Q108, Q109 · 2018 Q107-110 · 2021 Q124 · 2023 Q85 · 2024 Q84, Q85' },
   { id: 'relations', side: 'reasoning', name: 'Blood Relations',
     blurb: 'Four and five links deep, phrased so that the diagram has to be drawn before anything is obvious.',
     papers: '2018 Q111 · 2021 Q123' },
   { id: 'arrange', side: 'reasoning', name: 'Seating & Order',
     blurb: 'Round tables where "right" is anticlockwise, and rows pinned down by clues.',
     papers: '2015 Q106 · arrangement block' },
-  { id: 'figures', side: 'reasoning', name: 'Figure Counting',
-    blurb: 'Rectangles, squares and triangles — counted by size class, never at random.',
-    papers: '2015 Q103 · 2016 Q105 · 2018 Q106 · 2021 Q113' },
+  { id: 'figures', side: 'reasoning', name: 'Figures, Mirrors & Cubes',
+    blurb: 'Rectangles, squares and triangles counted by size class; mirror images of capitals; the cubes hidden inside a painted block.',
+    papers: '2015 Q103 · 2016 Q105 · 2018 Q106 · 2021 Q113 · 2023 Q89, Q90 · 2024 Q89, Q95' },
   { id: 'clocks', side: 'reasoning', name: 'Clocks, Calendars & Direction',
-    blurb: 'Rotated dials, the angle between two moving hands, and days counted in sevens.',
-    papers: '2021 Q115 · mental ability block' },
+    blurb: 'Rotated dials, the angle between two moving hands, days counted in sevens, walks that double back, and people placed by compass offsets.',
+    papers: '2021 Q115 · 2023 Q87 · 2024 Q87' },
+
+  { id: 'sets', side: 'reasoning', name: 'Sets & Venn Diagrams',
+    blurb: 'Three overlapping groups counted by inclusion–exclusion, and choosing the diagram three nouns actually make.',
+    papers: '2023 Q93 · 2024 Q88' },
   { id: 'numbers', side: 'quants', name: 'Number Sense',
     blurb: 'Unit digits, divisibility by several numbers at once, consecutive integers, counting solutions.',
     papers: '2016 Q114 · 2018 Q112, Q113 · 2021 Q112' },
   { id: 'mixtures', side: 'quants', name: 'Ratio & Mixtures',
-    blurb: 'Alloys melted together, water added to a mixture, wages on two scales, coins in a ratio.',
-    papers: '2016 Q112 · 2018 Q114, Q115 · 2021 Q120' },
+    blurb: 'Alloys melted together, water added to a mixture, a mixture changed twice, wages on two scales, coins in a ratio.',
+    papers: '2016 Q112 · 2018 Q114, Q115 · 2021 Q120 · 2024 Q91' },
   { id: 'percent', side: 'quants', name: 'Percentage & Trade',
-    blurb: 'Elections decided by chained percentages, growth between two years, equal gain and loss.',
-    papers: '2015 Q116 · 2016 Q119 · 2021 Q117' },
+    blurb: 'Elections decided by chained percentages, growth between two years, equal gain and loss, a fraction used upside down, and a price cut that buys more.',
+    papers: '2015 Q116 · 2016 Q119 · 2021 Q117 · 2023 Q91, Q92 · 2024 Q92' },
   { id: 'interest', side: 'quants', name: 'Interest, Growth & Work',
-    blurb: 'The CI−SI gap, doubling periods, population run backwards, work when somebody leaves early.',
-    papers: '2015 Q104 · 2016 Q117, Q118 · 2018 Q116-118 · 2021 Q118' },
+    blurb: 'The CI−SI gap, doubling periods, population run backwards, work when somebody leaves early, one sum split between two schemes, and compounding more often than yearly.',
+    papers: '2015 Q104 · 2016 Q117, Q118 · 2018 Q116-118 · 2021 Q118 · 2023 Q97 · 2024 Q93' },
   { id: 'counting', side: 'quants', name: 'Counting & Chance',
-    blurb: '"At least one", committees with a floor, and dice whose order counts itself.',
-    papers: '2021 Q114, Q119' },
-  { id: 'measure', side: 'quants', name: 'Averages, Mensuration & DI',
-    blurb: 'Averages that move, walls minus their openings, pie charts and growth read off a table.',
-    papers: '2018 Q119-121 · 2021 Q111, Q116' },
+    blurb: '"At least one", committees with a floor, dice whose order counts itself, the gap method, repeated letters, and the sum of two dice.',
+    papers: '2021 Q114, Q119 · 2023 Q103 · 2024 Q97, Q98' },
+  { id: 'measure', side: 'quants', name: 'Averages, Statistics, Mensuration & DI',
+    blurb: 'Averages that move and averages repaired, mean against median against mode, rate read off a table, walls minus their openings, figures inscribed in a circle, pie charts and growth from a table.',
+    papers: '2018 Q119-121 · 2021 Q111, Q116 · 2023 Q94, Q95, Q96 · 2024 Q83, Q94, Q96' },
 ];
 
 export const rasTopic = id => RAS_TOPICS.find(t => t.id === id) || null;

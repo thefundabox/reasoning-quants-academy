@@ -132,3 +132,44 @@ export const MIXTURE_GENERATORS = [
   gen('ras-mix-wages', 'mixtures', 'quants:2', 'ratio-difference', 'Two ratios at once', wageRatio),
   gen('ras-mix-coins', 'mixtures', 'quants:2', 'ratio-one-part', 'Coins in a ratio', coins),
 ];
+
+/* A mixture changed twice — RAS 2024 Q91. Adding a second mixture and then
+   REMOVING some of the blend is the step that catches people: what is removed
+   takes milk and water in the blend's proportion, not in the original's. */
+const twoSteps = (R, tier) => {
+  const start = R.pick([1000, 1200, 800, 1500]);
+  const [m1, w1] = R.pick([[3, 1], [4, 1], [5, 3], [2, 1]]);
+  const added = R.pick([200, 250, 300, 400]);
+  const [m2, w2] = R.pick([[3, 2], [1, 1], [2, 3], [4, 1]]);
+  const taken = R.pick([200, 250, 300]);
+  const milk = start * m1 / (m1 + w1) + added * m2 / (m2 + w2);
+  const total = start + added;
+  if (taken >= total) return null;
+  const left = round(milk * (total - taken) / total, 2);
+  if (Math.round(left) !== left) return null;
+  return ask({
+    context: `A vessel holds <b>${start} ml</b> of a mixture of milk and water in the ratio
+      <b>${m1} : ${w1}</b>. <b>${added} ml</b> of another mixture, milk and water in the ratio
+      <b>${m2} : ${w2}</b>, is added to it. Then <b>${taken} ml</b> of the combined mixture is taken out.`,
+    q: 'How much pure milk is left in the vessel?',
+    opts: options(`${left} ml`, [
+      { v: `${round(milk, 2)} ml`, why: `That is the milk before ${taken} ml was taken out. What is removed carries milk away too.` },
+      { v: `${round(milk - taken, 2)} ml`, why: `That removes the whole ${taken} ml as if it were
+        milk alone. What is taken out carries milk and water in the mixture's own proportion.` },
+      { v: `${round(start * m1 / (m1 + w1), 2)} ml`, why: 'That is the milk in the original vessel, before anything was added.' },
+      { v: `${round(total - taken, 2)} ml`, why: 'That is the total volume left, milk and water together.' },
+    ], i => `${round(left + 20 * (i + 1), 2)} ml`),
+    why: `Milk after the addition: ${start} × ${m1}/${m1 + w1} + ${added} × ${m2}/${m2 + w2}
+      = ${round(start * m1 / (m1 + w1), 2)} + ${round(added * m2 / (m2 + w2), 2)} = <b>${round(milk, 2)} ml</b>
+      in ${total} ml of mixture.<br>
+      Taking out ${taken} ml leaves ${total - taken} ml of the SAME mixture, so the milk left is
+      ${round(milk, 2)} × ${total - taken}/${total} = <b>${left} ml</b>.`,
+    hardness: 2.7,
+    concept: 'ratio-chain', conceptLabel: 'A mixture changed twice',
+    source: 'Shape of RAS 2024, Q91',
+  });
+};
+
+MIXTURE_GENERATORS.push(
+  gen('ras-mix-steps', 'mixtures', 'quants:2', 'ratio-chain', 'A mixture changed twice', twoSteps),
+);

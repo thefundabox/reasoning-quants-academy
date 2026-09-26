@@ -200,3 +200,168 @@ export const CODE_GENERATORS = [
   gen('ras-code-blanks', 'codes', 'reasoning:5', 'alternate-terms', 'Repeating blocks', missingLetters),
   gen('ras-code-oper', 'codes', 'reasoning:5', 'second-differences', 'Invented operations', madeUpOperator),
 ];
+
+/* ============================================================
+   Wider coverage: the same block of the paper, other shapes.
+
+   RAS 2015 Q100 and 2024 Q84 are pure NUMBER series; 2023 Q85 and 2024 Q85
+   are coding by rearrangement and by alphabetical order, neither of which is
+   a shift; 2016 Q108 and 2018 Q109 are odd-one-out over letter patterns.
+   None of those is a variant of the five generators above — they are separate
+   skills, and a bank that only drills shift-codes leaves them untouched.
+   ============================================================ */
+
+/* Number series. Six rule families, from "look at the differences" up to
+   "look at the differences of the differences", plus the two forms the papers
+   actually used: n²(n+1) and n(n+1)(n+2)-shaped products. */
+const numberSeries = (R, tier) => {
+  const FAMILIES = [
+    { /* second differences constant — RAS 2015 Q100 */
+      make: () => { const a = R.int(8, 30), d = R.int(6, 14), dd = R.int(2, 8);
+        const t = [a]; let step = d;
+        for (let i = 0; i < 5; i++) { t.push(t[i] + step); step += dd; }
+        return { t, say: `the differences rise by ${dd} each time` }; },
+      tier: 1 },
+    { /* n² + n, n³ − n and friends — RAS 2024 Q84: 2, 12, 36, 80, 150 = n²(n+1) */
+      make: () => { const k = R.pick([
+          { f: n => n * n * (n + 1), say: 'n² × (n + 1)' },
+          { f: n => n * (n + 1) * (n + 2), say: 'n(n + 1)(n + 2)' },
+          { f: n => n * n * n + n, say: 'n³ + n' },
+          { f: n => n * n * n - n, say: 'n³ − n' },
+        ]);
+        const s = R.int(1, 3);
+        return { t: [...Array(6).keys()].map(i => k.f(i + s)), say: `each term is ${k.say}, counting from n = ${s}` }; },
+      tier: 3 },
+    { /* multiply and add */
+      make: () => { const a = R.int(2, 6), m = R.int(2, 4), c = R.int(1, 9);
+        const t = [a];
+        for (let i = 0; i < 5; i++) t.push(t[i] * m + c);
+        return { t, say: `each term is the one before it × ${m} + ${c}` }; },
+      tier: 2 },
+    { /* alternating: two interleaved series */
+      make: () => { const a = R.int(3, 12), b = R.int(5, 20), da = R.int(3, 9), db = R.int(4, 11);
+        const t = [];
+        for (let i = 0; i < 3; i++) { t.push(a + da * i); t.push(b + db * i); }
+        return { t, say: `two series take turns: ${a}, ${a + da}, ${a + 2 * da} … and ${b}, ${b + db}, ${b + 2 * db} …` }; },
+      tier: 2 },
+    { /* squares or cubes with an offset */
+      make: () => { const off = R.int(-6, 9), cube = R() < 0.4, s = R.int(2, 5);
+        const t = [...Array(6).keys()].map(i => (cube ? (i + s) ** 3 : (i + s) ** 2) + off);
+        return { t, say: `${cube ? 'cubes' : 'squares'} of consecutive numbers${off ? `, ${off > 0 ? 'plus' : 'minus'} ${Math.abs(off)}` : ''}` }; },
+      tier: 2 },
+    { /* each term = sum of the two before (Fibonacci-like) */
+      make: () => { const a = R.int(2, 9), b = R.int(3, 14);
+        const t = [a, b];
+        for (let i = 2; i < 6; i++) t.push(t[i - 1] + t[i - 2]);
+        return { t, say: 'each term is the sum of the two before it' }; },
+      tier: 1 },
+  ];
+  const pool = FAMILIES.filter(f => (tier === 1 ? f.tier <= 2 : tier === 3 ? f.tier >= 2 : true));
+  const built = R.pick(pool).make();
+  const t = built.t;
+  if (t.some(x => !Number.isFinite(x) || x > 5e5)) return null;
+  const key = t[5];
+  const shown = t.slice(0, 5);
+  /* Distractors that come from the mistakes this shape invites: repeating the
+     last step, a step too many, and reading the差 as constant. */
+  const lastStep = t[4] - t[3];
+  const cands = [key + lastStep, t[4] + lastStep, key - lastStep, key + Math.round(lastStep / 2), key * 2 - t[4]];
+  return ask({
+    context: `Look at the series: <b>${shown.join(',&nbsp; ')},&nbsp; ?</b>`,
+    q: 'What comes next?',
+    opts: options(String(key), [
+      { v: String(t[4] + (t[4] - t[3])), why: 'That repeats the LAST gap. The gaps are not constant here — check how they change.' },
+      ...cands.map(v => ({ v: String(v), why: '' })),
+    ], i => String(key + 3 * (i + 1) + 1)),
+    why: `Write the gaps underneath: ${t.slice(0, 5).map((x, i) => (i ? t[i] - t[i - 1] : null)).filter(Boolean).join(', ')}.<br>
+      The rule is that <b>${built.say}</b>, so the next term is <b>${key}</b>.`,
+    hardness: 1 + (tier >= 3 ? 1.5 : 0) + shown[4] / 400,
+    concept: 'second-differences', conceptLabel: 'Differences of the differences',
+    source: 'Shape of RAS 2015 Q100 · RAS 2024 Q84',
+  });
+};
+
+/* Coding by REARRANGEMENT — RAS 2023 Q85 — and by alphabetical order —
+   RAS 2024 Q85. Neither moves a letter along the alphabet, which is exactly
+   why a candidate drilled only on shifts freezes. */
+const rearrangeCode = (R, tier) => {
+  const WORDS = ['GERMINATION', 'ORGANISED', 'PUBLICATION', 'TRANSPORTED', 'MAGNETISED', 'CALCULATOR', 'DISTRIBUTE'];
+  const [demo, target] = R.some(WORDS, 2);
+  const RULES = [
+    { id: 'blocks', tier: 2,
+      say: 'the word is cut into blocks of three and each block is written backwards',
+      f: w => w.match(/.{1,3}/g).map(b => [...b].reverse().join('')).join('') },
+    { id: 'halves', tier: 1,
+      say: 'the two halves are swapped, and each half is written backwards',
+      f: w => { const h = Math.ceil(w.length / 2);
+        return [...w.slice(h)].reverse().join('') + [...w.slice(0, h)].reverse().join(''); } },
+    { id: 'sorted', tier: 2,
+      say: 'the letters are written in alphabetical order',
+      f: w => [...w].sort().join('') },
+    { id: 'pairs', tier: 3,
+      say: 'the letters are swapped in pairs — first with second, third with fourth, and so on',
+      f: w => { const a = [...w];
+        for (let i = 0; i + 1 < a.length; i += 2) { const t2 = a[i]; a[i] = a[i + 1]; a[i + 1] = t2; }
+        return a.join(''); } },
+  ];
+  const rule = R.pick(RULES.filter(r => (tier === 1 ? r.tier <= 2 : tier === 3 ? r.tier >= 2 : true)));
+  const key = rule.f(target);
+  const wrong = RULES.filter(r => r.id !== rule.id).map(r => r.f(target));
+  if (new Set([key, ...wrong]).size < 3) return null;
+  return ask({
+    context: `In a certain code, <b>${demo}</b> is written as <b>${rule.f(demo)}</b>.`,
+    q: `How is <b>${target}</b> written in the same code?`,
+    opts: options(key, [
+      ...wrong.map(v => ({ v, why: 'That is a different rearrangement — test your rule on the example before using it.' })),
+      { v: [...target].reverse().join(''), why: 'The whole word reversed is not what the example shows.' },
+    ], i => { const a = [...key]; const j = (i * 2) % (a.length - 1); [a[j], a[j + 1]] = [a[j + 1], a[j]]; return a.join(''); }),
+    why: `Line the example up letter by letter and the rule appears: <b>${rule.say}</b>.<br>
+      ${demo} → ${rule.f(demo)} ✓, so ${target} → <b>${key}</b>.<br>
+      Nothing moves along the alphabet here — the letters are the same ones, in a new order.`,
+    hardness: 1.2 + (rule.tier >= 3 ? 1.2 : 0) + target.length / 12,
+    concept: 'same-letters-test', conceptLabel: 'Rearrangement, not a shift',
+    source: 'Shape of RAS 2023 Q85 · RAS 2024 Q85',
+  });
+};
+
+/* Odd one out over letter groups — RAS 2016 Q108, RAS 2018 Q109. Three groups
+   obey a rule and one does not; the rule is built first, so "which is odd" has
+   exactly one answer. */
+const oddOneOut = (R, tier) => {
+  const GAPS = [[1, 2, 1], [2, 2, 2], [1, 3, 1], [3, 1, 3], [2, 4, 2], [1, 1, 3]];
+  const gaps = R.pick(GAPS);
+  const build = start => {
+    const out = [chr(start)];
+    let p = start;
+    for (const g of gaps) { p += g; out.push(chr(p)); }
+    return out.join('');
+  };
+  const starts = R.some([...Array(14).keys()].map(i => i + 2), 4);
+  const good = starts.slice(0, 3).map(build);
+  /* The odd one breaks exactly one gap, so the rule still looks plausible. */
+  const badGaps = gaps.slice();
+  badGaps[R.int(0, gaps.length - 1)] += R.pick([1, -1, 2]);
+  let p = starts[3];
+  const odd = [chr(p), ...badGaps.map(g => chr(p += g))].join('');
+  if (new Set([...good, odd]).size < 4) return null;
+  if (good.some(g => g === odd)) return null;
+  return ask({
+    context: '',
+    q: 'Three of these follow one rule. Pick the <b>odd one out</b>:',
+    opts: options(odd, good.map(v => ({
+      v, why: `In ${v} the letters step ${gaps.join(', ')} places apart — the same as the other two you did not pick.`,
+    }))),
+    why: `Convert each group to positions in the alphabet and look at the GAPS.<br>
+      ${good.map(g => `${g} → ${[...g].map(pos).join(', ')} — gaps ${gaps.join(', ')} ✓`).join('<br>')}<br>
+      ${odd} → ${[...odd].map(pos).join(', ')} — gaps ${badGaps.join(', ')} ✗, so <b>${odd}</b> is the odd one.`,
+    hardness: 1.3 + gaps.length / 4,
+    concept: 'odd-one-out', conceptLabel: 'Find the rule, then break it',
+    source: 'Shape of RAS 2016 Q108 · RAS 2018 Q109',
+  });
+};
+
+CODE_GENERATORS.push(
+  gen('ras-code-numseries', 'codes', 'reasoning:5', 'second-differences', 'Number series', numberSeries),
+  gen('ras-code-rearrange', 'codes', 'reasoning:5', 'same-letters-test', 'Rearrangement codes', rearrangeCode),
+  gen('ras-code-odd', 'codes', 'reasoning:5', 'odd-one-out', 'Odd one out', oddOneOut),
+);

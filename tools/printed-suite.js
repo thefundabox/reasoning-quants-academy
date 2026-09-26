@@ -314,6 +314,174 @@ module.exports = async function printedSuite(check) {
       const [l, w, h, nd, dw, dh, nw, ww, wh, rate] = m.slice(1, 11).map(num);
       return `₹${((2 * (l + w) * h - nd * dw * dh - nw * ww * wh) * rate).toLocaleString('en-IN')}`;
     },
+    /* ---- the wider RAS coverage ---- */
+    'ras-spa-walk'(q, t) {
+      const T = { North: 'East', East: 'South', South: 'West', West: 'North' };
+      const L = { North: 'West', West: 'South', South: 'East', East: 'North' };
+      const first = t.match(/walks (\d+) m towards the (North|South|East|West)/);
+      if (!first) return null;
+      let face = first[2], x = VEC[CODE[face]][0] * +first[1], y = VEC[CODE[face]][1] * +first[1];
+      for (const m of t.matchAll(/turns (left|right) and walks (\d+) m/g)) {
+        face = m[1] === 'right' ? T[face] : L[face];
+        x += VEC[CODE[face]][0] * +m[2];
+        y += VEC[CODE[face]][1] * +m[2];
+      }
+      if (/direction/.test(t)) {
+        if (x === 0) return y > 0 ? 'North' : 'South';
+        if (y === 0) return x > 0 ? 'East' : 'West';
+        return `${y > 0 ? 'North' : 'South'}-${x > 0 ? 'East' : 'West'}`;
+      }
+      return `${Math.hypot(x, y)} m`;
+    },
+    'ras-spa-positions'(q, t) {
+      const at = {};
+      const ab = t.match(/(\w+) and (\w+) are (\d+) m apart/);
+      if (!ab) return null;
+      at[ab[1]] = [0, 0]; at[ab[2]] = [+ab[3], 0];
+      const mid = t.match(/(\w+) is standing midway between (\w+) and (\w+)/);
+      if (mid) at[mid[1]] = [+ab[3] / 2, 0];
+      for (const m of t.matchAll(/(\w+) is (\d+) m (North|South|East|West) of (\w+)/g)) {
+        const base = at[m[4]];
+        if (!base) return null;
+        const [dx, dy] = VEC[CODE[m[3]]];
+        at[m[1]] = [base[0] + dx * +m[2], base[1] + dy * +m[2]];
+      }
+      const qm = strip(q.q).match(/between (\w+) and (\w+)/);
+      if (!qm || !at[qm[1]] || !at[qm[2]]) return null;
+      return `${Math.hypot(at[qm[1]][0] - at[qm[2]][0], at[qm[1]][1] - at[qm[2]][1])} m`;
+    },
+    'ras-spa-cubes'(q, t) {
+      const n = +(t.match(/(\d+) × \d+ × \d+/) || [])[1];
+      if (!n) return null;
+      if (/not be visible/.test(t)) return String((n - 2) ** 3);
+      if (/exactly two faces/.test(t)) return String(12 * (n - 2));
+      if (/exactly one face/.test(t)) return String(6 * (n - 2) ** 2);
+      if (/exactly three faces/.test(t)) return '8';
+      return null;
+    },
+    'ras-set-three'(q, t) {
+      const m = t.match(/group of ([\d,]+) boys.*?([\d,]+) play (\w[\w ]*?), ([\d,]+) play (\w[\w ]*?) and ([\d,]+) play (\w[\w ]*?)\./);
+      const only = [...t.matchAll(/([\d,]+) play only/g)].map(x => num(x[1]));
+      if (!m || only.length !== 3) return null;
+      const total = num(m[1]), sum = num(m[2]) + num(m[4]) + num(m[6]);
+      return String((sum - total - only.reduce((a, b) => a + b, 0)) / 2);
+    },
+    'ras-stat-mean'(q, t) {
+      const m = t.match(/mean of (\d+) observations was calculated as (\d+).*?taken as ([\d, ]+) were actually ([\d, ]+)\./);
+      if (!m) return null;
+      const wrong = m[3].split(',').map(x => +x), right = m[4].split(',').map(x => +x);
+      const diff = right.reduce((a, b) => a + b, 0) - wrong.reduce((a, b) => a + b, 0);
+      return String(Math.round((+m[2] + diff / +m[1]) * 100) / 100);
+    },
+    'ras-stat-centre'(q, t) {
+      const m = t.match(/readings: ([\d, ]+)\./);
+      const which = (strip(q.q).match(/the (median|mode|mean) of/) || [])[1];
+      if (!m || !which) return null;
+      const d = m[1].split(',').map(x => +x).sort((a, b) => a - b);
+      if (which === 'median') return String(d.length % 2 ? d[(d.length - 1) / 2] : (d[d.length / 2 - 1] + d[d.length / 2]) / 2);
+      if (which === 'mean') return String(Math.round(d.reduce((a, b) => a + b, 0) / d.length * 100) / 100);
+      const c = {};
+      d.forEach(x => { c[x] = (c[x] || 0) + 1; });
+      return String(+Object.keys(c).reduce((a, b) => (c[b] > c[a] ? b : a)));
+    },
+    'ras-geo-rect'(q, t) {
+      const m = t.match(/sides of a triangle are (\d+)\s*, (\d+) and (\d+) units\. A rectangle of width (\d+)/);
+      if (!m) return null;
+      const area = +m[1] * +m[2] / 2;
+      return `${2 * (area / +m[4] + +m[4])} units`;
+    },
+    'ras-geo-circle'(q, t) {
+      const n = +(t.match(/(\d+) equally spaced points/) || [])[1];
+      return n ? String((n / 2) * (n - 2)) : null;
+    },
+    'ras-pct-flip'(q, t) {
+      const m = t.match(/multiply a number by (\d+)\/(\d+)\s*, but multiplied it by (\d+)\/(\d+)/);
+      if (!m) return null;
+      const b = +m[1], a = +m[2];
+      return `${Math.round((b * b - a * a) / (b * b) * 10000) / 100}%`;
+    },
+    'ras-pct-cut'(q, t) {
+      const m = t.match(/reduction of ([\d.]+)% .*?get ([\d.]+) kg more for ₹([\d,]+)/);
+      if (!m) return null;
+      return `₹${Math.round(num(m[3]) * +m[1] / (100 * +m[2]) * 100) / 100}`;
+    },
+    'ras-pct-shift'(q, t) {
+      const m = t.match(/ratio (\d+) : (\d+) : (\d+).*?₹([\d,]+) more to each.*?ratio (\d+) : (\d+) : (\d+)/);
+      const who = (strip(q.q).match(/How much did ([A-C])/) || [])[1];
+      if (!m || !who) return null;
+      const b0 = [+m[1], +m[2], +m[3]], a0 = [+m[5], +m[6], +m[7]], c = num(m[4]);
+      /* Solve (b0·k + c)/(b2·k + c) = a0/a2 for k, from the outer two shares. */
+      const k = (c * (a0[0] - a0[2])) / (a0[2] * b0[0] - a0[0] * b0[2]);
+      const idx = 'ABC'.indexOf(who);
+      return `₹${(b0[idx] * k).toLocaleString('en-IN')}`;
+    },
+    'ras-int-split'(q, t) {
+      const m = t.match(/(\d+)\/(\d+) of a sum is deposited at compound interest of (\d+)%.*?simple interest of (\d+)%.*?exceeds the other by ₹([\d,]+) after (\d+) years/);
+      if (!m) return null;
+      const [nu, de, rc, rs, diff, yrs] = [+m[1], +m[2], +m[3], +m[4], num(m[5]), +m[6]];
+      const ci = (nu / de) * ((1 + rc / 100) ** yrs - 1);
+      const si = (1 - nu / de) * (rs * yrs / 100);
+      return `₹${Math.round(diff / Math.abs(ci - si)).toLocaleString('en-IN')}`;
+    },
+    'ras-int-often'(q, t) {
+      const m = t.match(/simple interest on ₹([\d,]+) for (\d+) years is ₹([\d,]+).*?compounded (half-yearly|quarterly).*?after (\d+) years/);
+      if (!m) return null;
+      const P = num(m[1]), rate = num(m[3]) * 100 / (P * +m[2]);
+      const k = m[4] === 'half-yearly' ? 2 : 4;
+      const amount = P * (1 + rate / (100 * k)) ** (k * +m[5]);
+      return `₹${Math.round((amount - P) * 100 / 100).toLocaleString('en-IN')}`;
+    },
+    'ras-mix-steps'(q, t) {
+      const m = t.match(/holds (\d+) ml .*?ratio (\d+) : (\d+)\s*\. (\d+) ml of another mixture, milk and water in the ratio (\d+) : (\d+)\s*, is added.*?Then (\d+) ml/);
+      if (!m) return null;
+      const [start, m1, w1, added, m2, w2, taken] = m.slice(1, 8).map(Number);
+      const milk = start * m1 / (m1 + w1) + added * m2 / (m2 + w2);
+      const total = start + added;
+      return `${Math.round(milk * (total - taken) / total * 100) / 100} ml`;
+    },
+    'ras-cnt-gaps'(q, t) {
+      const m = t.match(/(\d+) men and (\d+) women/);
+      if (!m) return null;
+      return String(fact(+m[1]) * C(+m[1] + 1, +m[2]) * fact(+m[2]));
+    },
+    'ras-cnt-repeat'(q, t) {
+      const m = t.match(/(\d+) different letters are given\. Words of (\d+) letters/);
+      if (!m) return null;
+      const k = +m[1], r = +m[2];
+      let distinct = 1;
+      for (let i = 0; i < r; i++) distinct *= k - i;
+      return String(k ** r - distinct);
+    },
+    'ras-cnt-dicesum'(q, t) {
+      const want = strip(q.q).match(/the sum is (.+?)\?/);
+      if (!want) return null;
+      const tests = {
+        'a prime number': x => [2, 3, 5, 7, 11].includes(x),
+        'a multiple of 3': x => x % 3 === 0,
+        'more than 9': x => x > 9,
+        'a perfect square': x => [4, 9].includes(x),
+        'an even number greater than 6': x => x % 2 === 0 && x > 6,
+        'a multiple of 4': x => x % 4 === 0,
+      }[want[1].trim()];
+      if (!tests) return null;
+      let good = 0;
+      for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) if (tests(a + b)) good++;
+      const g = gcd(good, 36) || 1;
+      return `${good / g}/${36 / g}`;
+    },
+    'ras-code-rearrange'(q, t) {
+      const m = t.match(/In a certain code, ([A-Z]+) is written as ([A-Z]+)\s*\. How is ([A-Z]+) written/);
+      if (!m) return null;
+      const RULES = [
+        w => w.match(/.{1,3}/g).map(b => [...b].reverse().join('')).join(''),
+        w => { const h = Math.ceil(w.length / 2); return [...w.slice(h)].reverse().join('') + [...w.slice(0, h)].reverse().join(''); },
+        w => [...w].sort().join(''),
+        w => { const a = [...w]; for (let i = 0; i + 1 < a.length; i += 2) { const x = a[i]; a[i] = a[i + 1]; a[i + 1] = x; } return a.join(''); },
+      ];
+      const fits = RULES.filter(f => f(m[1]) === m[2]);
+      if (fits.length !== 1) return null;                 // the example must pin one rule
+      return fits[0](m[3]);
+    },
     'ras-di-table'(q) {
       const rows = [...strip(q.context).matchAll(/([A-Z][a-z]+) ([\d,]+) ([\d,]+)/g)]
         .map(m => [m[1], num(m[2]), num(m[3])]).filter(r => r[0] !== 'Vehicle');

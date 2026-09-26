@@ -164,8 +164,14 @@ time, this bank rehearses **the paper**: every archetype in it is one the RPSC h
 RAS Prelims 2015, 2016, 2018, 2021, 2023 or 2024, and each generator names the question it was
 modelled on.
 
-- **41 generators across 12 topics** — over 20,000 distinct questions, every one with a worked
+- **66 generators across 13 topics** — over 23,000 distinct questions, every one with a worked
   explanation and a named mistake behind each wrong option.
+- **The papers set the level and the variety; they do not cap the syllabus.** The bank covers every
+  archetype found in RAS Prelims 2015–2024 *and* the neighbouring ones the same examiner can ask:
+  number series beside letter series, rearrangement codes beside shift codes, mirror images and
+  hidden cubes beside figure counting, three-set Venn counting, statistics repaired from totals,
+  inscribed figures, the gap method, compounding more often than yearly. A bank that stops at the
+  questions that happened to be printed is a bank that teaches last year's paper.
 - **Harder by design.** Its gentlest tier is an ordinary exam question; the chapter drills stay
   where they were, because they are for learning an idea rather than sitting a paper.
 - **Kept apart.** `assets/js/ras/` imports nothing from `assets/js/generators/` except the shared
@@ -173,6 +179,9 @@ modelled on.
 - Answers still feed the same Leitner ladder: each generator records against a concept its own
   chapter teaches, so a RAS question you miss comes back in your review queue and its re-teach
   goes to the lesson that taught it.
+
+Every topic carries the paper references its shapes come from, shown on the topic card and under
+each explanation, so a learner can see which of these the RPSC has actually set.
 
 Switch it off with `features.rasDrills` in `config.js`. Add a generator by writing it in the right
 `assets/js/ras/*.js`, exporting it from that file's array, and running the harness — `tools/ras-suite.js`
