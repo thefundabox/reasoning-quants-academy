@@ -187,6 +187,27 @@ module.exports = async function cloudSuite(check) {
   const masked = cloud.maskPhone('+919876543210');
   check('cloud: a masked number shows only its last four digits', masked.endsWith('3210') && !masked.includes('98765'), masked);
 
+  /* ---- a site with the cloud switched off must not download it ----
+
+     store.js imports cloud.js lazily, and only when `cloud.enabled`. That was
+     undone for a while by shell.js importing two helpers from it at the top of
+     the file, which pulled cloud.js and merge.js into every page of every
+     build — the heavy part (Firebase) stayed lazy, but "downloads none of it"
+     should mean none of it. */
+  const shellSrc = fs.readFileSync(path.join(ROOT, 'assets/js/shell.js'), 'utf8');
+  check('cloud: an ordinary page does not download the cloud module',
+    !/^import[^\n]*from '\.\/(cloud|merge)\.js'/m.test(shellSrc),
+    'shell.js imports it at the top, so every page loads it');
+  check('cloud: store.js still loads it lazily when it IS configured',
+    /CONFIG\.cloud\.enabled[\s\S]{0,120}import\('\.\/cloud\.js'\)/.test(
+      fs.readFileSync(path.join(ROOT, 'assets/js/store.js'), 'utf8')), '');
+
+  /* ---- the dev server should show what the host will show ---- */
+  const serve = fs.readFileSync(path.join(ROOT, 'tools/serve.py'), 'utf8');
+  check('cloud: the dev server serves the site\'s own 404 page, as the host does',
+    /def send_error/.test(serve) && /404\.html/.test(serve),
+    'a missing page renders Python\'s error page locally and 404.html in production');
+
   /* ---- the pieces a deployment needs ---- */
   const rules = fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8');
   check('cloud: the rules let a learner touch only their own record', /request\.auth\.uid == uid/.test(rules), '');

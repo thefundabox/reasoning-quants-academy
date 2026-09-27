@@ -30,6 +30,27 @@ class NoCacheHandler(SimpleHTTPRequestHandler):
         self.send_header("Expires", "0")
         super().end_headers()
 
+    def send_error(self, code, message=None, explain=None):
+        """Serve the site's own 404.html, the way a static host does.
+
+        Without this the dev server answers a missing page with Python's grey
+        "Error response" page, so the one screen a developer most wants to see
+        rendered — the one a mistyped link actually lands on — was the one
+        screen that could not be checked locally. GitHub Pages serves
+        /404.html; now so does this.
+        """
+        page = ROOT / "404.html"
+        if code == 404 and page.exists():
+            body = page.read_bytes()
+            self.send_response(404, message)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+            return
+        super().send_error(code, message, explain)
+
     def log_message(self, fmt, *args):        # keep the console readable
         if "404" in (fmt % args):
             super().log_message(fmt, *args)

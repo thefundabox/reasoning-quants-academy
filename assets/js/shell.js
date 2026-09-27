@@ -11,7 +11,6 @@ import { CONFIG } from './config.js';
 import { SECONDS_PER_QUESTION } from './mock.js';
 import { href, chapterPath, lessonPath, practicePath, drillPath, reteachPath,
          academyPath, loginPath, TABS } from './routes.js';
-import { maskPhone, cloudStatus } from './cloud.js';
 
 /* Two explicit fields, not one clever split — see the note in config.js. */
 const MARK_MAIN = CONFIG.identity.short;
@@ -46,6 +45,18 @@ export function ring(pct, label = '') {
    says so plainly. A profile signed in with a mobile number IS an account's
    copy (cloud.js), and the menu says that plainly too. */
 const initials = name => name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+
+/* Four lines rather than an import from cloud.js. Importing it here pulled
+   cloud.js AND merge.js into every page of a site that mostly has the cloud
+   switched off — exactly what the lazy import in store.js exists to avoid.
+   The heavy part (Firebase) was never loaded, but "downloads none of it"
+   should mean none of it. */
+const maskPhone = p => {
+  const v = String(p || '');
+  if (v.length <= 4) return v;
+  const cc = (v.match(/^\+\d{1,2}(?=\d{10}$)/) || [''])[0];
+  return cc + '•'.repeat(v.length - cc.length - 4) + v.slice(-4);
+};
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export function learnerChip() {
@@ -84,7 +95,9 @@ export function learnerChip() {
                <span class="who__plus">×</span> Remove ${esc(me.name)}</button>`
           : ''}
       <p class="who__note" id="whoNote">${mine
-        ? `Signed in as ${esc(maskPhone(me.account.phone))}. <b id="whoSync">${syncLabel(cloudStatus())}</b>`
+        /* The status starts as "connecting" and is filled in by the first
+           `rqa:cloud` event — cloud.js emits one as soon as it knows. */
+        ? `Signed in as ${esc(maskPhone(me.account.phone))}. <b id="whoSync">${syncLabel(null)}</b>`
         : cloud
           ? `${esc(me.name)} is saved in this browser only. Sign in with your mobile number to keep it
              on every device.`
