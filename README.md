@@ -183,6 +183,15 @@ modelled on.
 Every topic carries the paper references its shapes come from, shown on the topic card and under
 each explanation, so a learner can see which of these the RPSC has actually set.
 
+**The judgement questions are written, not generated** (`assets/js/ras/judgement.js`): 99 items
+across implicit assumptions, courses of action, strong arguments and what follows. What makes an
+assumption implicit is a judgement about a sentence, and a generator for that would be producing a
+FORMULA — "the option that restates the statement is always implicit" — which is the habit the
+paper punishes. Each item carries the principle that decides it, and a `level` the tier draws by.
+The harness holds the pool to what can go wrong editorially: no statement twice, a reason on every
+item, enough items at each tier, and no single answer worth more than half the marks — the two
+options are swapped on half the draws, except where an item's reason names a position.
+
 Switch it off with `features.rasDrills` in `config.js`. Add a generator by writing it in the right
 `assets/js/ras/*.js`, exporting it from that file's array, and running the harness — `tools/ras-suite.js`
 re-derives the mechanical answers from the printed question, re-solves the seating puzzles from

@@ -20,6 +20,7 @@ import { INTEREST_GENERATORS } from './interest.js';
 import { PERCENT_GENERATORS } from './percent.js';
 import { CODE_GENERATORS } from './codes.js';
 import { VERBAL_GENERATORS } from './verbal.js';
+import { JUDGEMENT_GENERATORS } from './judgement.js';
 import { RELATION_GENERATORS } from './relations.js';
 import { FIGURE_GENERATORS } from './figures.js';
 import { ARRANGE_GENERATORS } from './arrange.js';
@@ -33,7 +34,7 @@ import { STAT_GENERATORS } from './stats.js';
 import { GEOMETRY_GENERATORS } from './geometry.js';
 
 export const RAS_GENERATORS = [
-  ...VERBAL_GENERATORS, ...CODE_GENERATORS, ...RELATION_GENERATORS, ...ARRANGE_GENERATORS,
+  ...VERBAL_GENERATORS, ...JUDGEMENT_GENERATORS, ...CODE_GENERATORS, ...RELATION_GENERATORS, ...ARRANGE_GENERATORS,
   ...FIGURE_GENERATORS, ...CLOCK_GENERATORS, ...SPATIAL_GENERATORS, ...SET_GENERATORS_RAS,
   ...NUMBER_GENERATORS, ...MIXTURE_GENERATORS, ...PERCENT_GENERATORS, ...INTEREST_GENERATORS,
   ...COUNTING_GENERATORS, ...MEASURE_GENERATORS, ...STAT_GENERATORS, ...GEOMETRY_GENERATORS,
@@ -43,8 +44,8 @@ export const RAS_GENERATORS = [
    belongs to, which is how the page groups them. */
 export const RAS_TOPICS = [
   { id: 'verbal', side: 'reasoning', name: 'Statements & Syllogisms',
-    blurb: 'Assumptions, arguments, courses of action, and conclusions that must be tested by drawing.',
-    papers: '2015 Q112 · 2016 Q101-104 · 2018 Q102-105 · 2021 Q121-126' },
+    blurb: 'Syllogisms solved by counter-example, and 97 written items on implicit assumptions, courses of action, strong arguments and what actually follows.',
+    papers: '2015 Q112 · 2016 Q101-104 · 2018 Q102-105 · 2021 Q121-127 · 2023 Q81-83 · 2024 Q79-82, Q86' },
   { id: 'codes', side: 'reasoning', name: 'Coding & Series',
     blurb: 'Invented languages, shifted and rearranged alphabets, number series, three-letter series, repeating blocks, made-up operators and odd-one-out.',
     papers: '2015 Q94, Q100, Q107, Q108 · 2016 Q108, Q109 · 2018 Q107-110 · 2021 Q124 · 2023 Q85 · 2024 Q84, Q85' },

@@ -73,14 +73,12 @@ module.exports = async function rasSuite(check) {
     const missing = talksFigure.find(q => !/<svg|<table/.test(q.context || ''));
     check(`ras ${g.id}: a question that names a figure shows one`, !missing, missing ? strip(missing.q).slice(0, 70) : '');
     /* Difficulty must rise with the tier, or the tier argument is decoration.
-       The judgement questions are exempt and named: their difficulty lives in
-       the words of a written item, and a tier cannot make an assumption
-       harder to spot without rewriting it. Dressing that up with a
-       tier-shaped hardness number would be measuring the knob, not the
-       question. */
-    const WRITTEN = ['ras-verb-assume', 'ras-verb-action', 'ras-verb-arg'];
+       The written judgement items used to be exempt here, because a pool of
+       fifteen had nothing to vary. Each item now carries its own `level` and
+       the tier picks by it, so they are held to the same rule as everything
+       else. */
     const mean = t => hard[t].reduce((a, b) => a + b, 0) / (hard[t].length || 1);
-    if (hard[1].length && hard[3].length && !WRITTEN.includes(g.id)) {
+    if (hard[1].length && hard[3].length) {
       check(`ras ${g.id}: gets harder as the tier rises`, mean(3) >= mean(1),
         `${mean(1).toFixed(2)} → ${mean(2).toFixed(2)} → ${mean(3).toFixed(2)}`);
     }
@@ -247,6 +245,55 @@ module.exports = async function rasSuite(check) {
     if (seen.size < 100) thin.push(`${t.id}:${seen.size}`);
   }
   check('ras: every topic can deal at least a hundred different questions', thin.length === 0, thin.join(' '));
+
+  /* ---- the written judgement pool ----
+
+     These are the only questions in the bank a person wrote rather than a rule
+     generated, so what can go wrong with them is editorial: a lopsided answer
+     key that rewards always picking the first option, a duplicated statement,
+     a reason too thin to teach anything, or too few items at a tier so the
+     same question comes round twice in one set. */
+  {
+    const { POOLS } = await import('../assets/js/ras/judgement.js');
+    let items = 0;
+    for (const [kind, pool] of Object.entries(POOLS)) {
+      items += pool.length;
+      check(`ras ${kind}: the pool is deep enough that a set does not repeat itself`,
+        pool.length >= 16, `${pool.length} items`);
+      check(`ras ${kind}: no statement appears twice`,
+        new Set(pool.map(i => i.s)).size === pool.length, '');
+      const thinWhy = pool.filter(i => i.why.split(/\s+/).length < 18);
+      check(`ras ${kind}: every item gives a reason worth reading`, thinWhy.length === 0,
+        thinWhy.map(i => i.s.slice(0, 40)).join(' | '));
+      check(`ras ${kind}: every item names both options, a key and a level`,
+        pool.every(i => i.s && i.a && i.b && i.key >= 0 && i.key <= 3 && i.level >= 1 && i.level <= 3), '');
+      for (const [tier, want] of [[1, [1]], [2, [1, 2]], [3, [2, 3]]]) {
+        const n = pool.filter(i => want.includes(i.level)).length;
+        check(`ras ${kind}: tier ${tier} has a choice of items`, n >= 4, `${n} items at level ${want.join('/')}`);
+      }
+    }
+    check('ras judgement: the written pool is substantial', items >= 90, `${items} items`);
+
+    /* The commonest answer must not be a strategy. Four options means 25% by
+       luck; a pool where "Only I" is right 60% of the time teaches that
+       instead of teaching judgement. */
+    for (const g of RAS_GENERATORS.filter(x => /ras-verb-(assume|action|arg|conclude)/.test(x.id))) {
+      const counts = {};
+      let n = 0;
+      for (let s2 = 1; s2 <= 900; s2++) {
+        const q = g.make(rng(s2 * 17 + 3), 1 + (s2 % 3));
+        if (!q) continue;
+        n++;
+        const k = q.options[q.answer];
+        counts[k] = (counts[k] || 0) + 1;
+      }
+      const top = Math.max(...Object.values(counts)) / n;
+      check(`ras ${g.id}: no single answer is a winning strategy`, top <= 0.5,
+        `commonest key is ${(top * 100).toFixed(0)}% of ${n} draws`);
+      check(`ras ${g.id}: all four answers occur`, Object.keys(counts).length === 4, Object.keys(counts).join(' | '));
+    }
+    console.log(`  ${items} written judgement items checked for key spread, depth and duplication`);
+  }
 
   /* ---- sets and pages ---- */
   const set = rasSession('mixed', { size: 15, seed: 4242 });
