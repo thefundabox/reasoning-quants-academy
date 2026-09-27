@@ -197,6 +197,17 @@ Switch it off with `features.rasDrills` in `config.js`. Add a generator by writi
 re-derives the mechanical answers from the printed question, re-solves the seating puzzles from
 their own clues, and checks every topic can still deal at least a hundred different questions.
 
+## When a page cannot load
+
+Every page carries a short inline script (`assets/boot-fallback.html`, copied into each page rather
+than fetched, because it has to work exactly when fetching did not). If a request drops and the
+page is still empty, it says so and offers a reload.
+
+It is there because ES modules load as a **graph**: one failed file takes the whole render with it.
+That happened during an end-to-end check — a single widget module returned 503 from the CDN and
+the home page came up blank, with nothing on it to act on. On a patchy connection that is not an
+edge case.
+
 ## The printed question is the question
 
 `tools/printed-suite.js` reads what the LEARNER reads — the rendered question text and figure —

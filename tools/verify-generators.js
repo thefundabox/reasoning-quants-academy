@@ -5153,6 +5153,32 @@ async function pagesSuite() {
     check(`pages: the old ${dir}/?… address forwards to the new page`,
       src.includes(`R.${fn}`) && src.includes('location.replace'), '');
   }
+  /* ---- a page that cannot load must say so ----
+
+     ES modules load as a graph, so one dropped request takes the whole render
+     with it and leaves an empty cream page. Every page carries a tiny inline
+     script that notices and offers a reload — inline and dependency-free,
+     because it has to work on the one occasion when other things did not. */
+  {
+    const hand = ['index.html', 'review/index.html', 'mock/index.html', 'progress/index.html',
+      'customize/index.html', 'login/index.html'];
+    /* The module tabs are exempt, and visibly so: they are the original
+       self-contained pages, with inline scripts, no module graph and no #app
+       to fill — there is nothing there that can fail to arrive. */
+    const needsIt = pages.filter(p => p.html.includes('<div id="app">'));
+    const missingGen = needsIt.filter(p => !p.html.includes('That did not load')).map(p => p.path);
+    const missingHand = hand.filter(f => !fs.readFileSync(path.join(ROOT, f), 'utf8').includes('That did not load'));
+    check('pages: every generated page says so when it cannot load', missingGen.length === 0,
+      missingGen.slice(0, 3).join(', '));
+    check('pages: and the exemption is only the self-contained module tabs',
+      pages.length - needsIt.length === pages.filter(p => p.path.startsWith('modules/')).length,
+      `${pages.length - needsIt.length} pages without #app`);
+    check('pages: so does every hand-written page', missingHand.length === 0, missingHand.join(', '));
+    const fb = fs.readFileSync(path.join(ROOT, 'assets/boot-fallback.html'), 'utf8');
+    check('pages: the fallback needs nothing that could itself have failed to load',
+      !/<script[^>]+src=/.test(fb) && !/import |from '/.test(fb) && /location\.reload/.test(fb), '');
+  }
+
   check('pages: GitHub Pages will not run Jekyll over the site', fs.existsSync(path.join(ROOT, '.nojekyll')), '');
   check('pages: a missing address has a way home', fs.existsSync(path.join(ROOT, '404.html')), '');
   const built = require('./build.js');

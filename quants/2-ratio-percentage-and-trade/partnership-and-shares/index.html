@@ -12,6 +12,32 @@
 </head>
 <body class="theme-quant">
 <div id="app"></div>
+<script>
+/* If one request drops, the page stays blank for ever — ES modules load as a
+   graph, so a single failed file takes the whole render with it, and the
+   learner is left looking at an empty cream page with nothing to act on.
+   Deliberately inline and dependency-free: it has to work on exactly the
+   occasion when other things did not load. */
+(function () {
+  var failed = false;
+  addEventListener('error', function (e) {
+    if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) failed = true;
+  }, true);
+  function stuck() {
+    var app = document.getElementById('app');
+    if (!app || app.innerHTML.trim()) return;
+    app.innerHTML = '<div style="max-width:30rem;margin:18vh auto;padding:0 24px;text-align:center;'
+      + 'font:16px/1.55 ui-sans-serif,system-ui,-apple-system,\'Segoe UI\',sans-serif;color:#1d1815">'
+      + '<h1 style="font-size:24px;margin:0 0 10px">That did not load</h1>'
+      + '<p style="color:#5f564c;margin:0 0 22px">Part of the page never arrived — usually a dropped '
+      + 'connection. Reloading almost always fixes it.</p>'
+      + '<button onclick="location.reload()" style="background:#8c3b2e;color:#fff;border:0;font:inherit;'
+      + 'font-weight:700;padding:12px 26px;border-radius:14px;cursor:pointer">Reload the page</button></div>';
+  }
+  addEventListener('error', function () { setTimeout(stuck, 400); }, true);
+  setTimeout(stuck, 12000);
+})();
+</script>
 <script type="module">
 import { lessonPage } from '../../../assets/js/pages.js';
 lessonPage("q.pct.partner");
