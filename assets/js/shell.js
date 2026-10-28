@@ -19,7 +19,7 @@ export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 /* ---------- brand ---------- */
-export function brandmark(to = href('')) {
+export function brandmark(to = 'https://course.rasonly.com/') {
   return `<a class="brandmark" href="${to}">
     <img src="${LOGO}" alt="${CONFIG.identity.name}" width="1280" height="241"></a>`;
 }
