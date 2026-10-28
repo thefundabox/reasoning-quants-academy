@@ -12,9 +12,8 @@ import { SECONDS_PER_QUESTION } from './mock.js';
 import { href, chapterPath, lessonPath, practicePath, drillPath, reteachPath,
          academyPath, loginPath, TABS } from './routes.js';
 
-/* Two explicit fields, not one clever split — see the note in config.js. */
-const MARK_MAIN = CONFIG.identity.short;
-const MARK_SUB = CONFIG.identity.markSub;
+/* Resolved against this module, not the page, so it holds at any depth. */
+const LOGO = new URL('../img/logo.png', import.meta.url).href;
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -22,13 +21,7 @@ export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 /* ---------- brand ---------- */
 export function brandmark(to = href('')) {
   return `<a class="brandmark" href="${to}">
-    <svg viewBox="0 0 40 40" aria-hidden="true">
-      <rect x="2" y="2" width="36" height="36" rx="11" fill="var(--brand)"/>
-      <circle cx="15" cy="16" r="6" fill="none" stroke="#fff" stroke-width="2.4" opacity=".95"/>
-      <circle cx="25" cy="16" r="6" fill="none" stroke="var(--gold)" stroke-width="2.4"/>
-      <path d="M12 28h16" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>
-    </svg>
-    <span>${MARK_MAIN}${MARK_SUB ? `<small>${MARK_SUB}</small>` : ''}</span></a>`;
+    <img src="${LOGO}" alt="${CONFIG.identity.name}" width="1280" height="241"></a>`;
 }
 
 /* ---------- progress ring ---------- */
